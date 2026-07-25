@@ -1,0 +1,222 @@
+{
+  "generatedAt": "2026-07-25T15:41:54.275Z",
+  "sourceRoot": "source-assets/megakit",
+  "models": [
+    {
+      "name": "Building_Medium_2_001",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Building_Medium_2_001.gltf",
+      "runtime": "/assets/megakit/models/Building_Medium_2_001.gltf",
+      "materials": [
+        "MI_InteriorFloor",
+        "MI_Trim_Green",
+        "MI_FakeInterior_1",
+        "MI_FakeInterior_2",
+        "MI_FakeInterior_3",
+        "MI_FakeInterior_4",
+        "MI_InteriorWall",
+        "MI_Trim",
+        "MI_Glass",
+        "MI_Trim_Dark",
+        "MI_RedBrick",
+        "MI_Asphalt"
+      ],
+      "images": [
+        "T_MarbleFloor_Normal.png",
+        "T_MarbleFloor_BaseColor.png",
+        "T_MarbleFloor_ORM.png",
+        "T_Trim_Normal.png",
+        "T_Trim_BaseColor.png",
+        "T_Trim_ORM.png",
+        "T_lit_interior_1.png",
+        "T_lit_interior_2.png",
+        "T_dark_interior.png",
+        "T_RedBrick_Normal.png",
+        "T_RedBrick_BaseColor.png",
+        "T_RedBrick_ORM.png",
+        "T_Concrete_Normal.png",
+        "T_Concrete_Asphalt_BaseColor.png",
+        "T_Concrete_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Street_2Lane",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Street_2Lane.gltf",
+      "runtime": "/assets/megakit/models/Street_2Lane.gltf",
+      "materials": [
+        "MI_Asphalt",
+        "MI_StreetDecals",
+        "MI_Trim_MetalConcrete"
+      ],
+      "images": [
+        "T_Concrete_Normal.png",
+        "T_Concrete_Asphalt_BaseColor.png",
+        "T_Concrete_ORM.png",
+        "T_Street_Decals.png",
+        "T_MetalConcrete_Normal.png",
+        "T_MetalConcrete_BaseColor.png",
+        "T_MetalConcrete_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Sidewalk_Straight_3m",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Sidewalk_Straight_3m.gltf",
+      "runtime": "/assets/megakit/models/Sidewalk_Straight_3m.gltf",
+      "materials": [
+        "MI_Trim_MetalConcrete"
+      ],
+      "images": [
+        "T_MetalConcrete_Normal.png",
+        "T_MetalConcrete_BaseColor.png",
+        "T_MetalConcrete_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Brick_Plain_3",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Brick_Plain_3.gltf",
+      "runtime": "/assets/megakit/models/Brick_Plain_3.gltf",
+      "materials": [
+        "MI_RedBrick",
+        "MI_InteriorWall"
+      ],
+      "images": [
+        "T_RedBrick_Normal.png",
+        "T_RedBrick_BaseColor.png",
+        "T_RedBrick_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Brick_Plain_3_noWear",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Brick_Plain_3_noWear.gltf",
+      "runtime": "/assets/megakit/models/Brick_Plain_3_noWear.gltf",
+      "materials": [
+        "MI_RedBrick",
+        "MI_InteriorWall"
+      ],
+      "images": [
+        "T_RedBrick_Normal.png",
+        "T_RedBrick_BaseColor.png",
+        "T_RedBrick_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Building_Small_1",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Building_Small_1.gltf",
+      "runtime": "/assets/megakit/models/Building_Small_1.gltf",
+      "materials": [
+        "MI_RedBrick_Pale",
+        "MI_Trim",
+        "MI_InteriorWall",
+        "MI_Trim_MetalConcrete",
+        "MI_Glass",
+        "MI_FakeInterior_2",
+        "MI_Trim_Dark",
+        "MI_FakeInterior_1",
+        "MI_Concrete",
+        "MI_FakeInterior_4",
+        "MI_FakeInterior_3",
+        "MI_Asphalt",
+        "MI_InteriorFloor"
+      ],
+      "images": [
+        "T_RedBrick_Normal.png",
+        "T_RedBrick_BaseColor.png",
+        "T_RedBrick_ORM.png",
+        "T_Trim_Normal.png",
+        "T_Trim_BaseColor.png",
+        "T_Trim_ORM.png",
+        "T_MetalConcrete_Normal.png",
+        "T_MetalConcrete_BaseColor.png",
+        "T_MetalConcrete_ORM.png",
+        "T_lit_interior_2.png",
+        "T_lit_interior_1.png",
+        "T_Concrete_Normal.png",
+        "T_Concrete_BaseColor.png",
+        "T_Concrete_ORM.png",
+        "T_dark_interior.png",
+        "T_Concrete_Asphalt_BaseColor.png",
+        "T_MarbleFloor_Normal.png",
+        "T_MarbleFloor_BaseColor.png",
+        "T_MarbleFloor_ORM.png"
+      ],
+      "remaps": [
+        {
+          "meshIndex": 0,
+          "primitiveIndex": 0,
+          "fromAccessor": 4,
+          "toAccessor": 5
+        },
+        {
+          "meshIndex": 0,
+          "primitiveIndex": 1,
+          "fromAccessor": 11,
+          "toAccessor": 12
+        },
+        {
+          "meshIndex": 0,
+          "primitiveIndex": 6,
+          "fromAccessor": 46,
+          "toAccessor": 47
+        }
+      ]
+    },
+    {
+      "name": "Door_2",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Door_2.gltf",
+      "runtime": "/assets/megakit/models/Door_2.gltf",
+      "materials": [
+        "MI_Trim_MetalConcrete",
+        "MI_Glass"
+      ],
+      "images": [
+        "T_MetalConcrete_Normal.png",
+        "T_MetalConcrete_BaseColor.png",
+        "T_MetalConcrete_ORM.png"
+      ],
+      "remaps": [
+        {
+          "meshIndex": 0,
+          "primitiveIndex": 0,
+          "fromAccessor": 4,
+          "toAccessor": 5
+        }
+      ]
+    },
+    {
+      "name": "Door_3",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Door_3.gltf",
+      "runtime": "/assets/megakit/models/Door_3.gltf",
+      "materials": [
+        "MI_Trim_MetalConcrete",
+        "MI_Glass"
+      ],
+      "images": [
+        "T_MetalConcrete_Normal.png",
+        "T_MetalConcrete_BaseColor.png",
+        "T_MetalConcrete_ORM.png"
+      ],
+      "remaps": [
+        {
+          "meshIndex": 0,
+          "primitiveIndex": 0,
+          "fromAccessor": 4,
+          "toAccessor": 5
+        }
+      ]
+    }
+  ],
+  "shaderTextures": [
+    "/assets/megakit/textures/CM_Lit_Interior_1.HDR",
+    "/assets/megakit/textures/CM_Lit_Interior_2.HDR",
+    "/assets/megakit/textures/CM_Dark_Interior_1.HDR",
+    "/assets/megakit/textures/T_CornerDamage_Normal.png",
+    "/assets/megakit/textures/T_Noise_Drips.png"
+  ],
+  "environmentTextures": [
+    "/assets/megakit/textures/environmentSpecular.env"
+  ]
+}

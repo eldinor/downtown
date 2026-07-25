@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.vite/
+coverage/
+test-results/
+source-assets/
+Downtown City MegaKit[Standard].zip
+*.log
+*.zip
+*.tsbuildinfo
+.DS_Store
