@@ -12,6 +12,7 @@ import {
   Engine,
   ImageProcessingConfiguration,
   Mesh,
+  MultiMaterial,
   PBRMaterial,
   Scene,
   Texture,
@@ -25,7 +26,12 @@ import {
 import { DefaultRenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline";
 import { SSRRenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/ssrRenderingPipeline";
 import { AssetRegistry } from "../assets/AssetRegistry";
-import type { PreparedAssetManifest } from "../core/contracts";
+import type {
+  InteriorControlState,
+  InteriorTextureId,
+  InteriorVariantId,
+  PreparedAssetManifest,
+} from "../core/contracts";
 import { WeatherController } from "../core/WeatherController";
 import { FakeInteriorMaterial } from "../interior/FakeInteriorMaterial";
 import { createHud } from "../ui/createHud";
@@ -93,7 +99,7 @@ function prepareWeathering(
       continue;
     }
 
-    material.environmentIntensity = 1.1;
+    material.environmentIntensity = 1.35;
     new SurfaceWeatheringPlugin(
       material,
       controller,
@@ -129,6 +135,51 @@ function replaceInteriorMaterials(
   }
 }
 
+function setAllInteriorMaterials(
+  container: AssetContainer,
+  material: FakeInteriorMaterial["material"],
+): void {
+  for (const multiMaterial of container.multiMaterials) {
+    for (let index = 0; index < multiMaterial.subMaterials.length; index += 1) {
+      const current = multiMaterial.subMaterials[index];
+      if (
+        current?.name.startsWith("MI_FakeInterior") ||
+        current?.name.startsWith("FakeInterior_")
+      ) {
+        multiMaterial.subMaterials[index] = material;
+      }
+    }
+  }
+  setInteriorMaterialOnMeshes(container.meshes, material);
+}
+
+function setInteriorMaterialOnMeshes(
+  meshes: AbstractMesh[],
+  material: FakeInteriorMaterial["material"],
+): void {
+  for (const mesh of meshes) {
+    const current = mesh.material;
+    if (current instanceof MultiMaterial) {
+      for (let index = 0; index < current.subMaterials.length; index += 1) {
+        const subMaterial = current.subMaterials[index];
+        if (
+          subMaterial?.name.startsWith("MI_FakeInterior") ||
+          subMaterial?.name.startsWith("FakeInterior_")
+        ) {
+          current.subMaterials[index] = material;
+        }
+      }
+      continue;
+    }
+    if (
+      current?.name.startsWith("MI_FakeInterior") ||
+      current?.name.startsWith("FakeInterior_")
+    ) {
+      mesh.material = material;
+    }
+  }
+}
+
 function enableCollisions(meshes: AbstractMesh[]): void {
   for (const mesh of meshes) {
     if (mesh.getTotalVertices() > 0) {
@@ -148,7 +199,7 @@ export async function createScene(engine: Engine): Promise<SceneResources> {
   scene.fogDensity = 0.006;
   scene.fogColor = new Color3(0.09, 0.115, 0.16);
   scene.collisionsEnabled = true;
-  scene.gravity.set(0, -0.28, 0);
+  scene.gravity.set(0, 0, 0);
 
   const canvas = engine.getRenderingCanvas();
   if (!canvas) {
@@ -181,9 +232,60 @@ export async function createScene(engine: Engine): Promise<SceneResources> {
   walkCamera.speed = 0.35;
   walkCamera.angularSensibility = 2800;
   walkCamera.minZ = 0.05;
-  walkCamera.applyGravity = true;
-  walkCamera.checkCollisions = true;
+  walkCamera.applyGravity = false;
+  walkCamera.checkCollisions = false;
   walkCamera.ellipsoid = new Vector3(0.45, 0.9, 0.45);
+  const walkInspectionHeight = walkCamera.position.y;
+  walkCamera.onAfterCheckInputsObservable.add(() => {
+    walkCamera.position.y = walkInspectionHeight;
+  });
+  const walkKeys = new Set<string>();
+  const movementCodes = new Set(["KeyW", "KeyA", "KeyS", "KeyD"]);
+  const onWalkKeyDown = (event: KeyboardEvent) => {
+    if (scene.activeCamera === walkCamera && movementCodes.has(event.code)) {
+      walkKeys.add(event.code);
+      event.preventDefault();
+    }
+  };
+  const onWalkKeyUp = (event: KeyboardEvent) => {
+    walkKeys.delete(event.code);
+  };
+  const clearWalkKeys = () => walkKeys.clear();
+  window.addEventListener("keydown", onWalkKeyDown);
+  window.addEventListener("keyup", onWalkKeyUp);
+  window.addEventListener("blur", clearWalkKeys);
+
+  const localForward = Vector3.Forward();
+  const localRight = Vector3.Right();
+  const walkForward = new Vector3();
+  const walkRight = new Vector3();
+  const walkDelta = new Vector3();
+  const walkMovementObserver = scene.onBeforeRenderObservable.add(() => {
+    if (scene.activeCamera !== walkCamera || walkKeys.size === 0) {
+      return;
+    }
+
+    walkCamera.getDirectionToRef(localForward, walkForward);
+    walkCamera.getDirectionToRef(localRight, walkRight);
+    walkForward.y = 0;
+    walkRight.y = 0;
+    walkForward.normalize();
+    walkRight.normalize();
+    walkDelta.setAll(0);
+
+    if (walkKeys.has("KeyW")) walkDelta.addInPlace(walkForward);
+    if (walkKeys.has("KeyS")) walkDelta.subtractInPlace(walkForward);
+    if (walkKeys.has("KeyD")) walkDelta.addInPlace(walkRight);
+    if (walkKeys.has("KeyA")) walkDelta.subtractInPlace(walkRight);
+
+    if (walkDelta.lengthSquared() > 0) {
+      walkDelta
+        .normalize()
+        .scaleInPlace((4.5 * engine.getDeltaTime()) / 1000);
+      walkCamera.position.addInPlace(walkDelta);
+      walkCamera.position.y = walkInspectionHeight;
+    }
+  });
 
   scene.activeCamera = orbitCamera;
   orbitCamera.attachControl(canvas, true);
@@ -194,10 +296,31 @@ export async function createScene(engine: Engine): Promise<SceneResources> {
     activeCamera = mode === "orbit" ? orbitCamera : walkCamera;
     scene.activeCamera = activeCamera;
     activeCamera.attachControl(canvas, true);
+    canvas.focus({ preventScroll: true });
   };
 
-  const hud = createHud(controller, { setCameraMode });
-  hud.setStatus("Loading environment");
+  let ssr: SSRRenderingPipeline | null = null;
+  let ssrEnabled = false;
+  const setSsrEnabled = (enabled: boolean) => {
+    if (ssrEnabled === enabled) {
+      return;
+    }
+    ssrEnabled = enabled;
+    if (!ssr) {
+      return;
+    }
+    if (enabled) {
+      scene.postProcessRenderPipelineManager.attachCamerasToRenderPipeline(
+        ssr.name,
+        [orbitCamera, walkCamera],
+      );
+    } else {
+      scene.postProcessRenderPipelineManager.detachCamerasFromRenderPipeline(
+        ssr.name,
+        [orbitCamera, walkCamera],
+      );
+    }
+  };
 
   const environment = CubeTexture.CreateFromPrefilteredData(
     `${textureRoot}/environmentSpecular.env`,
@@ -235,7 +358,7 @@ export async function createScene(engine: Engine): Promise<SceneResources> {
   post.bloomWeight = 0.17;
   post.bloomKernel = 48;
 
-  const ssr = new SSRRenderingPipeline(
+  ssr = new SSRRenderingPipeline(
     "wet-ssr",
     scene,
     [orbitCamera, walkCamera],
@@ -253,6 +376,10 @@ export async function createScene(engine: Engine): Promise<SceneResources> {
   ssr.roughnessFactor = 0;
   ssr.ssrDownsample = 1;
   ssr.blurDownsample = 1;
+  scene.postProcessRenderPipelineManager.detachCamerasFromRenderPipeline(
+    ssr.name,
+    [orbitCamera, walkCamera],
+  );
 
   const dripTexture = new Texture(
     `${textureRoot}/T_Noise_Drips.png`,
@@ -291,15 +418,145 @@ export async function createScene(engine: Engine): Promise<SceneResources> {
     emissiveIntensity: 0.62,
   });
 
+  const interiorTextureUrls: Record<InteriorTextureId, string> = {
+    lit1: `${textureRoot}/CM_Lit_Interior_1.HDR`,
+    lit2: `${textureRoot}/CM_Lit_Interior_2.HDR`,
+    dark: `${textureRoot}/CM_Dark_Interior_1.HDR`,
+  };
+  const interiorDefaults: Record<InteriorVariantId, InteriorControlState> = {
+    lit1: {
+      texture: "lit1",
+      roomWidth: 1,
+      roomHeight: 1,
+      roomDepth: 1.6,
+      cubeRotation: 0,
+      emissiveIntensity: 1.14,
+      uvScaleX: 1.435474,
+      uvScaleY: 1,
+      uvOffsetX: -0.217737,
+      uvOffsetY: 0,
+      flipY: true,
+    },
+    lit2: {
+      texture: "lit2",
+      roomWidth: 1,
+      roomHeight: 1,
+      roomDepth: 1.6,
+      cubeRotation: 0.35,
+      emissiveIntensity: 1.08,
+      uvScaleX: 1.435474,
+      uvScaleY: 1,
+      uvOffsetX: -0.217737,
+      uvOffsetY: 0,
+      flipY: true,
+    },
+    dark: {
+      texture: "dark",
+      roomWidth: 1,
+      roomHeight: 1,
+      roomDepth: 1.4,
+      cubeRotation: -0.18,
+      emissiveIntensity: 0.62,
+      uvScaleX: 1.435474,
+      uvScaleY: 1,
+      uvOffsetX: -0.217737,
+      uvOffsetY: 0,
+      flipY: true,
+    },
+  };
+  const interiorStates: Record<InteriorVariantId, InteriorControlState> = {
+    lit1: { ...interiorDefaults.lit1 },
+    lit2: { ...interiorDefaults.lit2 },
+    dark: { ...interiorDefaults.dark },
+  };
+  const interiorMaterials: Record<
+    InteriorVariantId,
+    FakeInteriorMaterial
+  > = {
+    lit1: interiorLit1,
+    lit2: interiorLit2,
+    dark: interiorDark,
+  };
+  const applyInteriorState = (variant: InteriorVariantId) => {
+    const state = interiorStates[variant];
+    const material = interiorMaterials[variant];
+    const duskBoost = 0.9 + controller.wetness * 0.25;
+    material.setRoomTexture(interiorTextureUrls[state.texture]);
+    material.setRoomDimensions(
+      state.roomWidth,
+      state.roomHeight,
+      state.roomDepth,
+    );
+    material.setCubeRotation(state.cubeRotation);
+    material.setUvScaleOffset(
+      state.uvScaleX,
+      state.uvScaleY,
+      state.uvOffsetX,
+      state.uvOffsetY,
+    );
+    material.setFlipY(state.flipY);
+    material.setIntensity(state.emissiveIntensity * duskBoost);
+  };
+  const updateInterior = (
+    variant: InteriorVariantId,
+    patch: Partial<InteriorControlState>,
+  ) => {
+    Object.assign(interiorStates[variant], patch);
+    applyInteriorState(variant);
+  };
+  const resetInterior = (variant: InteriorVariantId) => {
+    interiorStates[variant] = { ...interiorDefaults[variant] };
+    applyInteriorState(variant);
+  };
+  let buildingContainer: AssetContainer | null = null;
+  let buildingPreviewMeshes: AbstractMesh[] = [];
+  let previewInteriorVariant: InteriorVariantId = "lit1";
+  const setInteriorPreviewVariant = (variant: InteriorVariantId) => {
+    previewInteriorVariant = variant;
+    if (buildingContainer) {
+      setAllInteriorMaterials(
+        buildingContainer,
+        interiorMaterials[previewInteriorVariant].material,
+      );
+    }
+    setInteriorMaterialOnMeshes(
+      buildingPreviewMeshes,
+      interiorMaterials[previewInteriorVariant].material,
+    );
+  };
+
   controller.subscribe(() => {
     const duskBoost = 0.9 + controller.wetness * 0.25;
-    interiorLit1.setIntensity(1.14 * duskBoost);
-    interiorLit2.setIntensity(1.08 * duskBoost);
-    interiorDark.setIntensity(0.62 * duskBoost);
+    interiorLit1.setIntensity(
+      interiorStates.lit1.emissiveIntensity * duskBoost,
+    );
+    interiorLit2.setIntensity(
+      interiorStates.lit2.emissiveIntensity * duskBoost,
+    );
+    interiorDark.setIntensity(
+      interiorStates.dark.emissiveIntensity * duskBoost,
+    );
   });
 
+  const hud = createHud(controller, {
+    setCameraMode,
+    setSsrEnabled,
+    setInteriorPreviewVariant,
+    getInteriorState: (variant) => ({ ...interiorStates[variant] }),
+    updateInterior,
+    resetInterior,
+  });
   hud.setStatus("Loading architecture");
-  const [manifest, building, street, sidewalk] = await Promise.all([
+  const [
+    manifest,
+    building,
+    largeBuilding,
+    smallBuilding,
+    street,
+    sidewalkWithCurb,
+    sidewalkNoCurb,
+  ] =
+    await Promise.all([
     fetch("/assets/megakit/manifest.json").then(
       (response) => response.json() as Promise<PreparedAssetManifest>,
     ),
@@ -307,10 +564,25 @@ export async function createScene(engine: Engine): Promise<SceneResources> {
       "Building_Medium_2_001",
       `${modelRoot}/Building_Medium_2_001.gltf`,
     ),
-    registry.load("Street_2Lane", `${modelRoot}/Street_2Lane.gltf`),
+    registry.load(
+      "Building_Large_2",
+      `${modelRoot}/Building_Large_2.gltf`,
+    ),
+    registry.load(
+      "Building_Small_1",
+      `${modelRoot}/Building_Small_1.gltf`,
+    ),
+    registry.load(
+      "Street_2Lane_noSidewalk",
+      `${modelRoot}/Street_2Lane_noSidewalk.gltf`,
+    ),
     registry.load(
       "Sidewalk_Straight_3m",
       `${modelRoot}/Sidewalk_Straight_3m.gltf`,
+    ),
+    registry.load(
+      "Sidewalk_NoCurb_3m",
+      `${modelRoot}/Sidewalk_NoCurb_3m.gltf`,
     ),
   ]);
 
@@ -318,17 +590,26 @@ export async function createScene(engine: Engine): Promise<SceneResources> {
     throw new Error("Prepared asset manifest is incomplete.");
   }
 
-  replaceInteriorMaterials(
-    building,
-    new Map([
-      ["MI_FakeInterior_1", interiorLit1.material],
-      ["MI_FakeInterior_2", interiorLit2.material],
-      ["MI_FakeInterior_3", interiorLit1.material],
-      ["MI_FakeInterior_4", interiorDark.material],
-    ]),
-  );
+  const interiorReplacements = new Map([
+    ["MI_FakeInterior_1", interiorLit1.material],
+    ["MI_FakeInterior_2", interiorLit2.material],
+    ["MI_FakeInterior_3", interiorLit1.material],
+    ["MI_FakeInterior_4", interiorDark.material],
+  ]);
+  replaceInteriorMaterials(building, interiorReplacements);
+  replaceInteriorMaterials(largeBuilding, interiorReplacements);
+  replaceInteriorMaterials(smallBuilding, interiorReplacements);
+  buildingContainer = building;
+  setInteriorPreviewVariant(previewInteriorVariant);
 
-  for (const container of [building, street, sidewalk]) {
+  for (const container of [
+    building,
+    largeBuilding,
+    smallBuilding,
+    street,
+    sidewalkWithCurb,
+    sidewalkNoCurb,
+  ]) {
     prepareWeathering(container, controller, dripTexture, damageTexture);
   }
 
@@ -342,44 +623,229 @@ export async function createScene(engine: Engine): Promise<SceneResources> {
     new Vector3(6, 0, 0),
     -Math.PI / 2,
   );
-  enableCollisions(buildingInstance.rootNodes[0].getChildMeshes(false));
+  buildingPreviewMeshes =
+    buildingInstance.rootNodes[0].getChildMeshes(false);
+  setInteriorPreviewVariant(previewInteriorVariant);
+  enableCollisions(buildingPreviewMeshes);
 
-  const streetInstance = street.instantiateModelsToScene(
-    (name) => `street-${name}`,
+  // The structural side walls span exactly 14 m along the frontage.
+  const neighboringBuildingOffset = 14;
+  const neighboringBuilding = building.instantiateModelsToScene(
+    (name) => `neighbor-${name}`,
     false,
     { doNotInstantiate: true },
   );
   setRootTransform(
-    streetInstance.rootNodes[0] as TransformNode,
-    Vector3.Zero(),
+    neighboringBuilding.rootNodes[0] as TransformNode,
+    new Vector3(6, 0, neighboringBuildingOffset),
+    -Math.PI / 2,
   );
-  enableCollisions(streetInstance.rootNodes[0].getChildMeshes(false));
+  const neighboringBuildingMeshes =
+    neighboringBuilding.rootNodes[0].getChildMeshes(false);
+  buildingPreviewMeshes.push(...neighboringBuildingMeshes);
+  setInteriorPreviewVariant(previewInteriorVariant);
+  enableCollisions(neighboringBuildingMeshes);
 
-  for (let index = -2; index <= 2; index += 1) {
-    const sidewalkInstance = sidewalk.instantiateModelsToScene(
-      (name) => `sidewalk-${index}-${name}`,
+  const largeBuildingInstance = largeBuilding.instantiateModelsToScene(
+    (name) => `right-large-${name}`,
+    false,
+    { doNotInstantiate: true },
+  );
+  setRootTransform(
+    largeBuildingInstance.rootNodes[0] as TransformNode,
+    new Vector3(6, 0, -24),
+    -Math.PI / 2,
+  );
+  const largeBuildingMeshes =
+    largeBuildingInstance.rootNodes[0].getChildMeshes(false);
+  buildingPreviewMeshes.push(...largeBuildingMeshes);
+  setInteriorPreviewVariant(previewInteriorVariant);
+  enableCollisions(largeBuildingMeshes);
+
+  const pedestrianNeighborOffset = 34;
+  const pedestrianNeighbor = smallBuilding.instantiateModelsToScene(
+    (name) => `pedestrian-neighbor-${name}`,
+    false,
+    { doNotInstantiate: true },
+  );
+  setRootTransform(
+    pedestrianNeighbor.rootNodes[0] as TransformNode,
+    new Vector3(6, 0, pedestrianNeighborOffset),
+    -Math.PI / 2,
+  );
+  const pedestrianNeighborMeshes =
+    pedestrianNeighbor.rootNodes[0].getChildMeshes(false);
+  buildingPreviewMeshes.push(...pedestrianNeighborMeshes);
+  setInteriorPreviewVariant(previewInteriorVariant);
+  enableCollisions(pedestrianNeighborMeshes);
+
+  const roadZPositions = Array.from(
+    { length: 13 },
+    (_, index) => -34.5 + index * 6,
+  );
+  for (const roadX of [-3, -9]) {
+    for (const roadZ of roadZPositions) {
+      const streetInstance = street.instantiateModelsToScene(
+        (name) => `street-${roadX}-${roadZ}-${name}`,
+        false,
+        { doNotInstantiate: true },
+      );
+      setRootTransform(
+        streetInstance.rootNodes[0] as TransformNode,
+        new Vector3(roadX, 0, roadZ),
+        -Math.PI / 2,
+      );
+      enableCollisions(streetInstance.rootNodes[0].getChildMeshes(false));
+    }
+  }
+
+  // Continue both sidewalk rows beyond the second building on one side.
+  const sidewalkZPositions = Array.from(
+    { length: 11 },
+    (_, index) => -6 + index * 3,
+  );
+  for (const sidewalkZ of sidewalkZPositions) {
+    const curbInstance = sidewalkWithCurb.instantiateModelsToScene(
+      (name) => `curb-${sidewalkZ}-${name}`,
       false,
       { doNotInstantiate: true },
     );
     setRootTransform(
-      sidewalkInstance.rootNodes[0] as TransformNode,
-      new Vector3(4.5, 0.01, index * 3),
+      curbInstance.rootNodes[0] as TransformNode,
+      new Vector3(1.5, 0.01, sidewalkZ),
+      -Math.PI / 2,
     );
-    enableCollisions(sidewalkInstance.rootNodes[0].getChildMeshes(false));
+    enableCollisions(curbInstance.rootNodes[0].getChildMeshes(false));
+
+    const noCurbInstance = sidewalkNoCurb.instantiateModelsToScene(
+      (name) => `no-curb-${sidewalkZ}-${name}`,
+      false,
+      { doNotInstantiate: true },
+    );
+    setRootTransform(
+      noCurbInstance.rootNodes[0] as TransformNode,
+      new Vector3(4.5, 0.01, sidewalkZ),
+    );
+    enableCollisions(noCurbInstance.rootNodes[0].getChildMeshes(false));
+  }
+
+  for (let index = 0; index < 5; index += 1) {
+    const sidewalkZ = 27 + index * 3;
+    const curbExtension = sidewalkWithCurb.instantiateModelsToScene(
+      (name) => `curb-extension-${sidewalkZ}-${name}`,
+      false,
+      { doNotInstantiate: true },
+    );
+    setRootTransform(
+      curbExtension.rootNodes[0] as TransformNode,
+      new Vector3(1.5, 0.01, sidewalkZ),
+      -Math.PI / 2,
+    );
+    enableCollisions(curbExtension.rootNodes[0].getChildMeshes(false));
+
+    const noCurbExtension = sidewalkNoCurb.instantiateModelsToScene(
+      (name) => `no-curb-extension-${sidewalkZ}-${name}`,
+      false,
+      { doNotInstantiate: true },
+    );
+    setRootTransform(
+      noCurbExtension.rootNodes[0] as TransformNode,
+      new Vector3(4.5, 0.01, sidewalkZ),
+    );
+    enableCollisions(noCurbExtension.rootNodes[0].getChildMeshes(false));
+  }
+
+  for (let index = 1; index <= 10; index += 1) {
+    const sidewalkZ = -6 - index * 3;
+    const curbExtension = sidewalkWithCurb.instantiateModelsToScene(
+      (name) => `large-curb-extension-${sidewalkZ}-${name}`,
+      false,
+      { doNotInstantiate: true },
+    );
+    setRootTransform(
+      curbExtension.rootNodes[0] as TransformNode,
+      new Vector3(1.5, 0.01, sidewalkZ),
+      -Math.PI / 2,
+    );
+    enableCollisions(curbExtension.rootNodes[0].getChildMeshes(false));
+
+    const noCurbExtension = sidewalkNoCurb.instantiateModelsToScene(
+      (name) => `large-no-curb-extension-${sidewalkZ}-${name}`,
+      false,
+      { doNotInstantiate: true },
+    );
+    setRootTransform(
+      noCurbExtension.rootNodes[0] as TransformNode,
+      new Vector3(4.5, 0.01, sidewalkZ),
+    );
+    enableCollisions(noCurbExtension.rootNodes[0].getChildMeshes(false));
+  }
+
+  const placeNoCurbSidewalk = (
+    namePrefix: string,
+    position: Vector3,
+    rotationY: number,
+  ) => {
+    const instance = sidewalkNoCurb.instantiateModelsToScene(
+      (name) => `${namePrefix}-${name}`,
+      false,
+      { doNotInstantiate: true },
+    );
+    setRootTransform(
+      instance.rootNodes[0] as TransformNode,
+      position,
+      rotationY,
+    );
+    enableCollisions(instance.rootNodes[0].getChildMeshes(false));
+  };
+
+  // Back of the united building footprint.
+  for (let index = 0; index < 26; index += 1) {
+    const sidewalkZ = -36 + index * 3;
+    placeNoCurbSidewalk(
+      `back-no-curb-${sidewalkZ}`,
+      new Vector3(19.5, 0.01, sidewalkZ),
+      Math.PI,
+    );
+  }
+
+  // Close both ends, joining the front and back sidewalk rows.
+  for (const [sideName, sidewalkZ, rotationY] of [
+    ["first", -8.5, Math.PI / 2],
+    ["first-outer", -11.5, Math.PI / 2],
+    ["large-far", -34.5, Math.PI / 2],
+    ["large-far-outer", -37.5, Math.PI / 2],
+    ["far", 22.5, -Math.PI / 2],
+    ["far-outer", 25.5, -Math.PI / 2],
+    ["small-far", 40.5, -Math.PI / 2],
+    ["small-far-outer", 43.5, -Math.PI / 2],
+  ] as const) {
+    for (let index = 0; index < 4; index += 1) {
+      const sidewalkX = 7.5 + index * 3;
+      placeNoCurbSidewalk(
+        `${sideName}-no-curb-${sidewalkX}`,
+        new Vector3(sidewalkX, 0.01, sidewalkZ),
+        rotationY,
+      );
+    }
   }
 
   const fpsObserver = scene.onBeforeRenderObservable.add(() => {
     hud.setFps(engine.getFps());
   });
 
-  hud.setStatus("Shader systems online", true);
+  hud.setStatus("Ready", true);
 
   return {
     scene,
     dispose() {
+      window.removeEventListener("keydown", onWalkKeyDown);
+      window.removeEventListener("keyup", onWalkKeyUp);
+      window.removeEventListener("blur", clearWalkKeys);
+      scene.onBeforeRenderObservable.remove(walkMovementObserver);
       scene.onBeforeRenderObservable.remove(fpsObserver);
       post.dispose();
-      ssr.dispose();
+      ssr?.dispose();
       interiorLit1.dispose();
       interiorLit2.dispose();
       interiorDark.dispose();

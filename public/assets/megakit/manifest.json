@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-25T15:48:02.920Z",
+  "generatedAt": "2026-07-25T20:07:46.183Z",
   "sourceRoot": "source-assets/megakit",
   "models": [
     {
@@ -40,6 +40,46 @@
       "remaps": []
     },
     {
+      "name": "Building_Large_2",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Building_Large_2.gltf",
+      "runtime": "/assets/megakit/models/Building_Large_2.gltf",
+      "materials": [
+        "MI_InteriorFloor",
+        "MI_Trim_Dark",
+        "MI_Trim_MetalConcrete",
+        "MI_InteriorWall",
+        "MI_Glass",
+        "MI_FakeInterior_2",
+        "MI_FakeInterior_3",
+        "MI_RedBrick",
+        "MI_FakeInterior_1",
+        "MI_FakeInterior_4",
+        "MI_Trim",
+        "MI_Asphalt"
+      ],
+      "images": [
+        "T_MarbleFloor_Normal.png",
+        "T_MarbleFloor_BaseColor.png",
+        "T_MarbleFloor_ORM.png",
+        "T_Trim_Normal.png",
+        "T_Trim_BaseColor.png",
+        "T_Trim_ORM.png",
+        "T_MetalConcrete_Normal.png",
+        "T_MetalConcrete_BaseColor.png",
+        "T_MetalConcrete_ORM.png",
+        "T_RedBrick_Normal.png",
+        "T_RedBrick_BaseColor.png",
+        "T_RedBrick_ORM.png",
+        "T_lit_interior_2.png",
+        "T_lit_interior_1.png",
+        "T_dark_interior.png",
+        "T_Concrete_Normal.png",
+        "T_Concrete_Asphalt_BaseColor.png",
+        "T_Concrete_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
       "name": "Street_2Lane",
       "source": "source-assets/megakit/Exports/glTF (Godot)/Street_2Lane.gltf",
       "runtime": "/assets/megakit/models/Street_2Lane.gltf",
@@ -60,9 +100,39 @@
       "remaps": []
     },
     {
+      "name": "Street_2Lane_noSidewalk",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Street_2Lane_noSidewalk.gltf",
+      "runtime": "/assets/megakit/models/Street_2Lane_noSidewalk.gltf",
+      "materials": [
+        "MI_Asphalt",
+        "MI_StreetDecals"
+      ],
+      "images": [
+        "T_Concrete_Normal.png",
+        "T_Concrete_Asphalt_BaseColor.png",
+        "T_Concrete_ORM.png",
+        "T_Street_Decals.png"
+      ],
+      "remaps": []
+    },
+    {
       "name": "Sidewalk_Straight_3m",
       "source": "source-assets/megakit/Exports/glTF (Godot)/Sidewalk_Straight_3m.gltf",
       "runtime": "/assets/megakit/models/Sidewalk_Straight_3m.gltf",
+      "materials": [
+        "MI_Trim_MetalConcrete"
+      ],
+      "images": [
+        "T_MetalConcrete_Normal.png",
+        "T_MetalConcrete_BaseColor.png",
+        "T_MetalConcrete_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Sidewalk_NoCurb_3m",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Sidewalk_NoCurb_3m.gltf",
+      "runtime": "/assets/megakit/models/Sidewalk_NoCurb_3m.gltf",
       "materials": [
         "MI_Trim_MetalConcrete"
       ],

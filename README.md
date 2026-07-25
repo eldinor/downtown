@@ -22,11 +22,8 @@ automatically. The full vendor archive remains untouched under
 ```bash
 npm run prepare:assets
 npm test
-npm run build
-npm run qa:browser
-```
-
-Browser QA expects the dev server at `http://127.0.0.1:4173`.
+  npm run build
+  ```
 
 ## Rendering systems
 
@@ -40,8 +37,8 @@ Browser QA expects the dev server at `http://127.0.0.1:4173`.
 - The prepared glTF files redirect the five meaningful `COLOR_1` primitives in
   `Building_Small_1`, `Door_2`, and `Door_3` to `COLOR_0`; their BIN data is not
   rewritten.
-- Wet materials combine PBR roughness changes, SSR, and the locally bundled
-  Babylon `environmentSpecular.env` fallback.
+- Wet materials combine PBR roughness changes with the locally bundled Babylon
+  `environmentSpecular.env`; SSR is available from the UI and defaults to off.
 
 ## City foundation
 

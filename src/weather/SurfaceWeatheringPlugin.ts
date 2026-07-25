@@ -27,17 +27,100 @@ varying vec2 vWeatherUv2;
 uniform sampler2D weatherDripSampler;
 uniform sampler2D weatherDamageNormalSampler;
 
+float weatherOrganicNoise(vec2 uv) {
+  mat2 detailRotation = mat2(
+    0.956, -0.292,
+    0.292, 0.956
+  );
+  float primary = texture2D(weatherDripSampler, uv).r;
+  float detail = texture2D(
+    weatherDripSampler,
+    detailRotation * uv * 1.73 + vec2(0.31, 0.67)
+  ).r;
+  float breakup = texture2D(
+    weatherDripSampler,
+    vec2(uv.y, -uv.x) * 0.47 + vec2(0.79, 0.16)
+  ).r;
+  return primary * 0.58 + detail * 0.29 + breakup * 0.13;
+}
+
+float weatherTriplanarNoise(vec3 position, vec3 normal) {
+  vec3 weights = pow(abs(normalize(normal)), vec3(4.0));
+  weights /= max(weights.x + weights.y + weights.z, 0.00001);
+  vec3 scaledPosition = position * 0.065;
+  float xProjection = weatherOrganicNoise(scaledPosition.zy);
+  float yProjection = weatherOrganicNoise(
+    vec2(scaledPosition.z, -scaledPosition.x)
+  );
+  float zProjection = weatherOrganicNoise(scaledPosition.xy);
+  return dot(
+    vec3(xProjection, yProjection, zProjection),
+    weights
+  );
+}
+
+float weatherPuddlePattern(vec3 position) {
+  mat2 puddleRotationA = mat2(
+    0.866, -0.5,
+    0.5, 0.866
+  );
+  mat2 puddleRotationB = mat2(
+    0.707, 0.707,
+    -0.707, 0.707
+  );
+  vec2 worldUv = position.xz;
+  float broadShapeA = texture2D(
+    weatherDripSampler,
+    puddleRotationA * worldUv * 0.034 + vec2(0.13, 0.41)
+  ).r;
+  float broadShapeB = texture2D(
+    weatherDripSampler,
+    puddleRotationB * worldUv * 0.057 + vec2(0.67, 0.09)
+  ).r;
+  float edgeDetail = texture2D(
+    weatherDripSampler,
+    puddleRotationA * worldUv * 0.13 + vec2(0.37, 0.19)
+  ).r;
+  return smoothstep(
+    0.48,
+    0.7,
+    broadShapeA * 0.5 +
+    broadShapeB * 0.34 +
+    edgeDetail * 0.16
+  );
+}
+
 mat3 weatherCotangentFrame(vec3 normal, vec3 position, vec2 uv) {
+  vec3 safeNormal = normalize(normal);
   vec3 dp1 = dFdx(position);
   vec3 dp2 = dFdy(position);
   vec2 duv1 = dFdx(uv);
   vec2 duv2 = dFdy(uv);
-  vec3 dp2perp = cross(dp2, normal);
-  vec3 dp1perp = cross(normal, dp1);
+  vec3 dp2perp = cross(dp2, safeNormal);
+  vec3 dp1perp = cross(safeNormal, dp1);
   vec3 tangent = dp2perp * duv1.x + dp1perp * duv2.x;
   vec3 bitangent = dp2perp * duv1.y + dp1perp * duv2.y;
-  float invmax = inversesqrt(max(dot(tangent, tangent), dot(bitangent, bitangent)));
-  return mat3(tangent * invmax, bitangent * invmax, normal);
+  float frameLengthSquared = max(
+    dot(tangent, tangent),
+    dot(bitangent, bitangent)
+  );
+
+  vec3 fallbackAxis = abs(safeNormal.y) < 0.999
+    ? vec3(0.0, 1.0, 0.0)
+    : vec3(1.0, 0.0, 0.0);
+  vec3 fallbackTangent = normalize(cross(fallbackAxis, safeNormal));
+  vec3 fallbackBitangent = cross(safeNormal, fallbackTangent);
+
+  float validFrame = step(1e-8, frameLengthSquared);
+  float inverseFrameLength = inversesqrt(max(frameLengthSquared, 1e-8));
+  tangent = mix(fallbackTangent, tangent * inverseFrameLength, validFrame);
+  bitangent = mix(
+    fallbackBitangent,
+    bitangent * inverseFrameLength,
+    validFrame
+  );
+
+  return mat3(tangent, bitangent, safeNormal);
 }
 `;
 
@@ -53,7 +136,7 @@ export class SurfaceWeatheringPlugin extends MaterialPluginBase {
   ) {
     super(material, "SurfaceWeathering", 180, undefined, true, true);
     this.unsubscribe = controller.subscribe(() => {
-      material.markAsDirty(1);
+      material.getScene().resetCachedMaterial();
     });
   }
 
@@ -81,6 +164,10 @@ export class SurfaceWeatheringPlugin extends MaterialPluginBase {
         { name: "weatherBaselineWear", size: 1, type: "float" },
         { name: "weatherProceduralWear", size: 1, type: "float" },
         { name: "weatherWearRoughnessBoost", size: 1, type: "float" },
+        { name: "weatherWearColorStrength", size: 1, type: "float" },
+        { name: "weatherWearDesaturation", size: 1, type: "float" },
+        { name: "weatherWearContrast", size: 1, type: "float" },
+        { name: "weatherPuddleStrength", size: 1, type: "float" },
         { name: "weatherWetRoughness", size: 1, type: "float" },
         { name: "weatherWetDarkening", size: 1, type: "float" },
         { name: "weatherDamageNormalStrength", size: 1, type: "float" },
@@ -112,6 +199,22 @@ export class SurfaceWeatheringPlugin extends MaterialPluginBase {
     uniformBuffer.updateFloat(
       "weatherWearRoughnessBoost",
       this.profile.wearRoughnessBoost,
+    );
+    uniformBuffer.updateFloat(
+      "weatherWearColorStrength",
+      this.profile.wearColorStrength,
+    );
+    uniformBuffer.updateFloat(
+      "weatherWearDesaturation",
+      this.profile.wearDesaturation,
+    );
+    uniformBuffer.updateFloat(
+      "weatherWearContrast",
+      this.profile.wearContrast,
+    );
+    uniformBuffer.updateFloat(
+      "weatherPuddleStrength",
+      this.profile.puddleStrength,
     );
     uniformBuffer.updateFloat(
       "weatherWetRoughness",
@@ -160,8 +263,7 @@ export class SurfaceWeatheringPlugin extends MaterialPluginBase {
       return {
         CUSTOM_FRAGMENT_DEFINITIONS: fragmentDefinitions,
         CUSTOM_FRAGMENT_BEFORE_LIGHTS: `
-          vec2 weatherUv = vec2(vPositionW.x + vPositionW.z, vPositionW.y) * 0.065;
-          float weatherNoise = texture2D(weatherDripSampler, weatherUv).r;
+          float weatherNoise = weatherTriplanarNoise(vPositionW, normalW);
           float authoredWear = clamp(1.0 - vWeatherMaskColor.r, 0.0, 1.0);
           float authoredWetness = clamp(1.0 - vWeatherMaskColor.g, 0.0, 1.0);
           float proceduralWear = mix(0.35, 1.0, weatherNoise) * weatherProceduralWear;
@@ -176,13 +278,16 @@ export class SurfaceWeatheringPlugin extends MaterialPluginBase {
             0.0,
             1.0
           );
-          vec2 weatherMasks = vec2(wearMask, wetMask);
-
-          float weatherLuma = dot(surfaceAlbedo, vec3(0.2126, 0.7152, 0.0722));
-          vec3 wornAlbedo = mix(surfaceAlbedo, vec3(weatherLuma), 0.22);
-          wornAlbedo = mix(wornAlbedo, wornAlbedo * 1.08, wearMask);
-          surfaceAlbedo = mix(surfaceAlbedo, wornAlbedo, wearMask);
-          surfaceAlbedo *= mix(1.0, weatherWetDarkening, wetMask);
+          float upwardSurface = pow(
+            clamp(geometricNormalW.y, 0.0, 1.0),
+            8.0
+          );
+          float puddleMask =
+            weatherPuddlePattern(vPositionW) *
+            upwardSurface *
+            weatherWetness *
+            weatherPuddleStrength;
+          vec3 weatherMasks = vec3(wearMask, wetMask, puddleMask);
 
           #ifdef UV2
             vec3 damageNormal = texture2D(weatherDamageNormalSampler, vWeatherUv2).xyz * 2.0 - 1.0;
@@ -194,6 +299,11 @@ export class SurfaceWeatheringPlugin extends MaterialPluginBase {
               wearMask * weatherDamageNormalStrength
             ));
           #endif
+          normalW = normalize(mix(
+            normalW,
+            vec3(0.0, 1.0, 0.0),
+            weatherMasks.z * 0.42
+          ));
         `,
         "!float roughness=reflectivityOut\\.roughness;": `
           float roughness = clamp(
@@ -202,12 +312,51 @@ export class SurfaceWeatheringPlugin extends MaterialPluginBase {
             1.0
           );
           roughness = mix(roughness, weatherWetRoughness, weatherMasks.y);
+          roughness = mix(roughness, 0.025, weatherMasks.z);
         `,
         CUSTOM_FRAGMENT_BEFORE_FRAGCOLOR: `
           if (weatherDebugMode > 0.5 && weatherDebugMode < 1.5) {
             finalColor = vec4(vec3(weatherMasks.x), 1.0);
           } else if (weatherDebugMode > 1.5) {
-            finalColor = vec4(0.05, weatherMasks.y, 1.0, 1.0);
+            finalColor = vec4(
+              weatherMasks.z,
+              weatherMasks.y,
+              0.12,
+              1.0
+            );
+          } else {
+            float finalWearLuma = dot(
+              finalColor.rgb,
+              vec3(0.2126, 0.7152, 0.0722)
+            );
+            float wearPattern = smoothstep(0.18, 0.82, weatherNoise);
+            float darkWearTone = mix(1.0, 0.48, weatherWearContrast);
+            float lightWearTone = mix(1.0, 1.26, weatherWearContrast);
+            float wearTone = mix(
+              darkWearTone,
+              lightWearTone,
+              wearPattern
+            );
+            float wearVisualStrength =
+              smoothstep(0.01, 0.32, weatherMasks.x) *
+              weatherWearColorStrength;
+            vec3 finalWornColor = mix(
+              finalColor.rgb,
+              vec3(finalWearLuma),
+              weatherWearDesaturation
+            );
+            finalWornColor *= wearTone;
+            finalColor.rgb = mix(
+              finalColor.rgb,
+              finalWornColor,
+              wearVisualStrength
+            );
+            finalColor.rgb *= mix(
+              1.0,
+              weatherWetDarkening,
+              weatherMasks.y
+            );
+            finalColor.rgb *= mix(1.0, 0.72, weatherMasks.z);
           }
         `,
       };

@@ -13,8 +13,11 @@ const textureOutput = path.join(outputRoot, "textures");
 
 const runtimeModels = [
   "Building_Medium_2_001",
+  "Building_Large_2",
   "Street_2Lane",
+  "Street_2Lane_noSidewalk",
   "Sidewalk_Straight_3m",
+  "Sidewalk_NoCurb_3m",
   "Brick_Plain_3",
   "Brick_Plain_3_noWear",
   "Building_Small_1",

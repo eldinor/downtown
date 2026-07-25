@@ -36,7 +36,18 @@ test("vendor archive extraction is complete", async () => {
 
 test("prepared manifest contains expected runtime models", async () => {
   const manifest = JSON.parse(await readFile(manifestUrl, "utf8"));
-  assert.equal(manifest.models.length, 8);
+  assert.equal(manifest.models.length, 11);
+  assert.ok(
+    manifest.models.some((model) => model.name === "Building_Large_2"),
+  );
+  assert.ok(
+    manifest.models.some((model) => model.name === "Sidewalk_NoCurb_3m"),
+  );
+  assert.ok(
+    manifest.models.some(
+      (model) => model.name === "Street_2Lane_noSidewalk",
+    ),
+  );
   assert.equal(manifest.shaderTextures.length, 5);
 });
 

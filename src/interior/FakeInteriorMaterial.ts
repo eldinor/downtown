@@ -44,6 +44,7 @@ uniform float roomDepth;
 uniform float roomWidth;
 uniform float roomHeight;
 uniform float cubeRotation;
+uniform float cubeFlipY;
 uniform float emissiveIntensity;
 uniform samplerCube interiorCube;
 
@@ -63,12 +64,25 @@ void main(void) {
   vec2 duvdx = dFdx(vUV);
   vec2 duvdy = dFdy(vUV);
 
-  vec3 tangent = normalize(dpdx * duvdy.y - dpdy * duvdx.y);
-  vec3 bitangent = normalize(-dpdx * duvdy.x + dpdy * duvdx.x);
   vec3 normalW = normalize(vNormalW);
-  if (dot(cross(tangent, bitangent), normalW) < 0.0) {
-    bitangent = -bitangent;
-  }
+  vec3 rawTangent = dpdx * duvdy.y - dpdy * duvdx.y;
+  vec3 rawBitangent = -dpdx * duvdy.x + dpdy * duvdx.x;
+
+  vec3 tangentCandidate =
+    rawTangent - normalW * dot(normalW, rawTangent);
+  float tangentLengthSquared = dot(tangentCandidate, tangentCandidate);
+  vec3 fallbackAxis = abs(normalW.y) < 0.999
+    ? vec3(0.0, 1.0, 0.0)
+    : vec3(1.0, 0.0, 0.0);
+  vec3 fallbackTangent = normalize(cross(fallbackAxis, normalW));
+  vec3 tangent = mix(
+    fallbackTangent,
+    tangentCandidate * inversesqrt(max(tangentLengthSquared, 1e-8)),
+    step(1e-8, tangentLengthSquared)
+  );
+  float handedness =
+    dot(cross(normalW, tangent), rawBitangent) < 0.0 ? -1.0 : 1.0;
+  vec3 bitangent = normalize(cross(normalW, tangent)) * handedness;
 
   vec3 worldRay = normalize(vPositionW - cameraPosition);
   vec3 roomRay = normalize(vec3(
@@ -91,6 +105,7 @@ void main(void) {
   vec3 roomHit = rayOrigin + shapedRay * hitDistance;
 
   vec3 sampleDirection = normalize(roomHit);
+  sampleDirection.y *= cubeFlipY;
   float c = cos(cubeRotation);
   float s = sin(cubeRotation);
   sampleDirection.xz = mat2(c, -s, s, c) * sampleDirection.xz;
@@ -108,8 +123,9 @@ void main(void) {
 `;
 
 export class FakeInteriorMaterial {
-  readonly texture: HDRCubeTexture;
+  texture: HDRCubeTexture;
   readonly material: ShaderMaterial;
+  private roomTextureUrl: string;
 
   constructor(scene: Scene, options: FakeInteriorOptions) {
     this.texture = new HDRCubeTexture(
@@ -121,6 +137,7 @@ export class FakeInteriorMaterial {
       false,
       false,
     );
+    this.roomTextureUrl = options.roomTextureUrl;
 
     this.material = new ShaderMaterial(
       options.name,
@@ -141,6 +158,7 @@ export class FakeInteriorMaterial {
           "roomWidth",
           "roomHeight",
           "cubeRotation",
+          "cubeFlipY",
           "emissiveIntensity",
         ],
         samplers: ["interiorCube"],
@@ -150,12 +168,13 @@ export class FakeInteriorMaterial {
     this.material.setTexture("interiorCube", this.texture);
     this.material.setVector4(
       "uvScaleOffset",
-      new Vector4(1.435474, 1, -0.217737, 0),
+      new Vector4(...(options.uvScaleOffset ?? [1.435474, 1, -0.217737, 0])),
     );
     this.material.setFloat("roomDepth", options.roomDepth);
     this.material.setFloat("roomWidth", options.roomWidth ?? 1);
     this.material.setFloat("roomHeight", options.roomHeight ?? 1);
     this.material.setFloat("cubeRotation", options.cubeRotation ?? 0);
+    this.material.setFloat("cubeFlipY", options.flipY === false ? 1 : -1);
     this.material.setFloat(
       "emissiveIntensity",
       options.emissiveIntensity ?? 1,
@@ -171,6 +190,51 @@ export class FakeInteriorMaterial {
 
   setIntensity(value: number): void {
     this.material.setFloat("emissiveIntensity", value);
+  }
+
+  setRoomTexture(url: string): void {
+    if (url === this.roomTextureUrl) {
+      return;
+    }
+    const previousTexture = this.texture;
+    this.texture = new HDRCubeTexture(
+      url,
+      this.material.getScene(),
+      256,
+      false,
+      false,
+      false,
+      false,
+    );
+    this.roomTextureUrl = url;
+    this.material.setTexture("interiorCube", this.texture);
+    previousTexture.dispose();
+  }
+
+  setRoomDimensions(width: number, height: number, depth: number): void {
+    this.material.setFloat("roomWidth", width);
+    this.material.setFloat("roomHeight", height);
+    this.material.setFloat("roomDepth", depth);
+  }
+
+  setCubeRotation(value: number): void {
+    this.material.setFloat("cubeRotation", value);
+  }
+
+  setUvScaleOffset(
+    scaleX: number,
+    scaleY: number,
+    offsetX: number,
+    offsetY: number,
+  ): void {
+    this.material.setVector4(
+      "uvScaleOffset",
+      new Vector4(scaleX, scaleY, offsetX, offsetY),
+    );
+  }
+
+  setFlipY(enabled: boolean): void {
+    this.material.setFloat("cubeFlipY", enabled ? -1 : 1);
   }
 
   dispose(): void {

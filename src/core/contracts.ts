@@ -8,6 +8,25 @@ export interface FakeInteriorOptions {
   roomHeight?: number;
   cubeRotation?: number;
   emissiveIntensity?: number;
+  uvScaleOffset?: readonly [number, number, number, number];
+  flipY?: boolean;
+}
+
+export type InteriorVariantId = "lit1" | "lit2" | "dark";
+export type InteriorTextureId = "lit1" | "lit2" | "dark";
+
+export interface InteriorControlState {
+  texture: InteriorTextureId;
+  roomWidth: number;
+  roomHeight: number;
+  roomDepth: number;
+  cubeRotation: number;
+  emissiveIntensity: number;
+  uvScaleX: number;
+  uvScaleY: number;
+  uvOffsetX: number;
+  uvOffsetY: number;
+  flipY: boolean;
 }
 
 export interface WeatherMaterialProfile {
@@ -16,6 +35,10 @@ export interface WeatherMaterialProfile {
   baselineWear: number;
   proceduralWear: number;
   wearRoughnessBoost: number;
+  wearColorStrength: number;
+  wearDesaturation: number;
+  wearContrast: number;
+  puddleStrength: number;
   wetRoughness: number;
   wetDarkening: number;
   damageNormalStrength: number;
