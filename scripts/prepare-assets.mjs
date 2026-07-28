@@ -23,6 +23,17 @@ const runtimeModels = [
   "Building_Small_1",
   "Door_2",
   "Door_3",
+  "DoorFrame_Metal_Single",
+  "Metal_FirstFloor_Wall",
+  "Metal_FirstFloor_Window",
+  "Metal_FullWindow",
+  "Brick_Window_Square_Single",
+  "Brick_Inset_Window",
+  "Metal_Plain_3",
+  "Metal_Window_Half",
+  "Metal_Window",
+  "Trim_Plain_3",
+  "Trim_Window",
 ];
 
 const shaderTextures = [

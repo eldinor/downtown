@@ -36,7 +36,7 @@ test("vendor archive extraction is complete", async () => {
 
 test("prepared manifest contains expected runtime models", async () => {
   const manifest = JSON.parse(await readFile(manifestUrl, "utf8"));
-  assert.equal(manifest.models.length, 11);
+  assert.equal(manifest.models.length, 22);
   assert.ok(
     manifest.models.some((model) => model.name === "Building_Large_2"),
   );
@@ -48,6 +48,21 @@ test("prepared manifest contains expected runtime models", async () => {
       (model) => model.name === "Street_2Lane_noSidewalk",
     ),
   );
+  for (const moduleName of [
+    "DoorFrame_Metal_Single",
+    "Metal_FirstFloor_Wall",
+    "Metal_FirstFloor_Window",
+    "Metal_FullWindow",
+    "Brick_Window_Square_Single",
+    "Brick_Inset_Window",
+    "Metal_Plain_3",
+    "Metal_Window_Half",
+    "Metal_Window",
+    "Trim_Plain_3",
+    "Trim_Window",
+  ]) {
+    assert.ok(manifest.models.some((model) => model.name === moduleName));
+  }
   assert.equal(manifest.shaderTextures.length, 5);
 });
 

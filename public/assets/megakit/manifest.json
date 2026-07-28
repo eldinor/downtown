@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-25T20:07:46.183Z",
+  "generatedAt": "2026-07-28T00:13:35.802Z",
   "sourceRoot": "source-assets/megakit",
   "models": [
     {
@@ -277,6 +277,219 @@
           "toAccessor": 5
         }
       ]
+    },
+    {
+      "name": "DoorFrame_Metal_Single",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/DoorFrame_Metal_Single.gltf",
+      "runtime": "/assets/megakit/models/DoorFrame_Metal_Single.gltf",
+      "materials": [
+        "MI_Trim_MetalConcrete",
+        "MI_Glass"
+      ],
+      "images": [
+        "T_MetalConcrete_Normal.png",
+        "T_MetalConcrete_BaseColor.png",
+        "T_MetalConcrete_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Metal_FirstFloor_Wall",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Metal_FirstFloor_Wall.gltf",
+      "runtime": "/assets/megakit/models/Metal_FirstFloor_Wall.gltf",
+      "materials": [
+        "MI_Trim_Dark",
+        "MI_Trim_MetalConcrete",
+        "MI_InteriorWall"
+      ],
+      "images": [
+        "T_Trim_Normal.png",
+        "T_Trim_BaseColor.png",
+        "T_Trim_ORM.png",
+        "T_MetalConcrete_Normal.png",
+        "T_MetalConcrete_BaseColor.png",
+        "T_MetalConcrete_ORM.png",
+        "T_RedBrick_Normal.png",
+        "T_RedBrick_BaseColor.png",
+        "T_RedBrick_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Metal_FirstFloor_Window",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Metal_FirstFloor_Window.gltf",
+      "runtime": "/assets/megakit/models/Metal_FirstFloor_Window.gltf",
+      "materials": [
+        "MI_Trim_Dark",
+        "MI_Trim_MetalConcrete",
+        "MI_Glass",
+        "MI_FakeInterior",
+        "MI_InteriorWall"
+      ],
+      "images": [
+        "T_Trim_Normal.png",
+        "T_Trim_BaseColor.png",
+        "T_Trim_ORM.png",
+        "T_MetalConcrete_Normal.png",
+        "T_MetalConcrete_BaseColor.png",
+        "T_MetalConcrete_ORM.png",
+        "T_RedBrick_Normal.png",
+        "T_RedBrick_BaseColor.png",
+        "T_RedBrick_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Metal_FullWindow",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Metal_FullWindow.gltf",
+      "runtime": "/assets/megakit/models/Metal_FullWindow.gltf",
+      "materials": [
+        "MI_Trim_MetalConcrete",
+        "MI_Glass",
+        "MI_FakeInterior"
+      ],
+      "images": [
+        "T_MetalConcrete_Normal.png",
+        "T_MetalConcrete_BaseColor.png",
+        "T_MetalConcrete_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Brick_Window_Square_Single",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Brick_Window_Square_Single.gltf",
+      "runtime": "/assets/megakit/models/Brick_Window_Square_Single.gltf",
+      "materials": [
+        "MI_RedBrick_Pale",
+        "MI_Trim",
+        "MI_Glass",
+        "MI_FakeInterior",
+        "MI_InteriorWall"
+      ],
+      "images": [
+        "T_RedBrick_Normal.png",
+        "T_RedBrick_BaseColor.png",
+        "T_RedBrick_ORM.png",
+        "T_Trim_Normal.png",
+        "T_Trim_BaseColor.png",
+        "T_Trim_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Brick_Inset_Window",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Brick_Inset_Window.gltf",
+      "runtime": "/assets/megakit/models/Brick_Inset_Window.gltf",
+      "materials": [
+        "MI_RedBrick_Pale",
+        "MI_Trim",
+        "MI_Glass",
+        "MI_FakeInterior",
+        "MI_InteriorWall"
+      ],
+      "images": [
+        "T_RedBrick_Normal.png",
+        "T_RedBrick_BaseColor.png",
+        "T_RedBrick_ORM.png",
+        "T_Trim_Normal.png",
+        "T_Trim_BaseColor.png",
+        "T_Trim_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Metal_Plain_3",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Metal_Plain_3.gltf",
+      "runtime": "/assets/megakit/models/Metal_Plain_3.gltf",
+      "materials": [
+        "MI_Trim_MetalConcrete",
+        "MI_InteriorWall"
+      ],
+      "images": [
+        "T_MetalConcrete_Normal.png",
+        "T_MetalConcrete_BaseColor.png",
+        "T_MetalConcrete_ORM.png",
+        "T_RedBrick_Normal.png",
+        "T_RedBrick_BaseColor.png",
+        "T_RedBrick_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Metal_Window_Half",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Metal_Window_Half.gltf",
+      "runtime": "/assets/megakit/models/Metal_Window_Half.gltf",
+      "materials": [
+        "MI_Trim_MetalConcrete",
+        "MI_Glass",
+        "MI_FakeInterior"
+      ],
+      "images": [
+        "T_MetalConcrete_Normal.png",
+        "T_MetalConcrete_BaseColor.png",
+        "T_MetalConcrete_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Metal_Window",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Metal_Window.gltf",
+      "runtime": "/assets/megakit/models/Metal_Window.gltf",
+      "materials": [
+        "MI_RedBrick",
+        "MI_Trim_MetalConcrete",
+        "MI_Glass",
+        "MI_FakeInterior",
+        "MI_InteriorWall"
+      ],
+      "images": [
+        "T_RedBrick_Normal.png",
+        "T_RedBrick_BaseColor.png",
+        "T_RedBrick_ORM.png",
+        "T_MetalConcrete_Normal.png",
+        "T_MetalConcrete_BaseColor.png",
+        "T_MetalConcrete_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Trim_Plain_3",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Trim_Plain_3.gltf",
+      "runtime": "/assets/megakit/models/Trim_Plain_3.gltf",
+      "materials": [
+        "MI_Trim",
+        "MI_InteriorWall"
+      ],
+      "images": [
+        "T_Trim_Normal.png",
+        "T_Trim_BaseColor.png",
+        "T_Trim_ORM.png",
+        "T_RedBrick_Normal.png",
+        "T_RedBrick_BaseColor.png",
+        "T_RedBrick_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Trim_Window",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Trim_Window.gltf",
+      "runtime": "/assets/megakit/models/Trim_Window.gltf",
+      "materials": [
+        "MI_Trim",
+        "MI_Glass",
+        "MI_Trim_Dark",
+        "MI_FakeInterior",
+        "MI_InteriorWall"
+      ],
+      "images": [
+        "T_Trim_Normal.png",
+        "T_Trim_BaseColor.png",
+        "T_Trim_ORM.png",
+        "T_RedBrick_Normal.png",
+        "T_RedBrick_BaseColor.png",
+        "T_RedBrick_ORM.png"
+      ],
+      "remaps": []
     }
   ],
   "shaderTextures": [
