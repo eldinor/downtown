@@ -34,6 +34,20 @@ const runtimeModels = [
   "Metal_Window",
   "Trim_Plain_3",
   "Trim_Window",
+  "Brick_BottomTrim",
+  "Trim_FirstFloor_Wall",
+  "Trim_FirstFloor_Window_001",
+  "DoorFrame_Trim",
+  "Door_1",
+  "Brick_HalfColumn_Bottom",
+  "Brick_HalfColumn_Center",
+  "Brick_HalfColumn_Top",
+  "Metal_Column_Small_Bottom",
+  "Metal_Column_Small_Center",
+  "Metal_Column_Small_Top",
+  "Trim_Column_Bottom",
+  "Trim_Column_Center",
+  "Trim_Column_Top",
 ];
 
 const shaderTextures = [

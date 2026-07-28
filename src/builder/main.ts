@@ -20,7 +20,17 @@ import {
 import { AssetRegistry } from "../assets/AssetRegistry";
 import "./styles.css";
 
-type ModuleId = "wall" | "window" | "shopfront" | "door";
+type ModuleId =
+  | "metalWall"
+  | "metalWindow"
+  | "shopfront"
+  | "doorLeft"
+  | "doorRight"
+  | "brickWall"
+  | "brickWindow"
+  | "trimWall"
+  | "trimWindow"
+  | "trimDoor";
 type FacadeFamily = "brick" | "metal" | "trim";
 type UpperModuleId = "wall" | "single" | "double" | "covered";
 
@@ -32,13 +42,13 @@ interface ModuleDefinition {
 
 const modules: ModuleDefinition[] = [
   {
-    id: "wall",
-    label: "Solid wall",
+    id: "metalWall",
+    label: "Metal wall",
     assetNames: ["Metal_FirstFloor_Wall"],
   },
   {
-    id: "window",
-    label: "Window",
+    id: "metalWindow",
+    label: "Metal window",
     assetNames: ["Metal_FirstFloor_Window"],
   },
   {
@@ -47,9 +57,39 @@ const modules: ModuleDefinition[] = [
     assetNames: ["Metal_FullWindow"],
   },
   {
-    id: "door",
-    label: "Entrance",
+    id: "doorLeft",
+    label: "Entrance · left",
     assetNames: ["DoorFrame_Metal_Single", "Door_2"],
+  },
+  {
+    id: "doorRight",
+    label: "Entrance · right",
+    assetNames: ["DoorFrame_Metal_Single", "Door_1"],
+  },
+  {
+    id: "brickWall",
+    label: "Brick wall",
+    assetNames: ["Brick_BottomTrim"],
+  },
+  {
+    id: "brickWindow",
+    label: "Brick window",
+    assetNames: ["Brick_Window_Square_Single"],
+  },
+  {
+    id: "trimWall",
+    label: "Trim wall",
+    assetNames: ["Trim_FirstFloor_Wall"],
+  },
+  {
+    id: "trimWindow",
+    label: "Trim window",
+    assetNames: ["Trim_FirstFloor_Window_001"],
+  },
+  {
+    id: "trimDoor",
+    label: "Trim entrance",
+    assetNames: ["DoorFrame_Trim", "Door_3"],
   },
 ];
 
@@ -95,6 +135,27 @@ const upperAssets: Record<
     },
   },
 };
+
+const columnAssets: Record<
+  FacadeFamily,
+  { bottom: string; center: string; top: string }
+> = {
+  brick: {
+    bottom: "Brick_HalfColumn_Bottom",
+    center: "Brick_HalfColumn_Center",
+    top: "Brick_HalfColumn_Top",
+  },
+  metal: {
+    bottom: "Metal_Column_Small_Bottom",
+    center: "Metal_Column_Small_Center",
+    top: "Metal_Column_Small_Top",
+  },
+  trim: {
+    bottom: "Trim_Column_Bottom",
+    center: "Trim_Column_Center",
+    top: "Trim_Column_Top",
+  },
+};
 const modelRoot = "/assets/megakit/models";
 const bayWidth = 2;
 const bayCount = 4;
@@ -103,15 +164,25 @@ function createMarkup(app: HTMLDivElement): void {
   app.innerHTML = `
     <main class="builder-shell">
       <aside class="builder-panel">
-        <p class="eyebrow">Prototype 01 · Ground floor</p>
-        <h1>Building module builder</h1>
-        <p class="intro">
-          Assemble an 8 m small-building frontage from reusable 2 × 3 m GLTF
-          elements. Select a bay, then choose its module.
-        </p>
+        <header class="builder-header">
+          <h1>Building builder</h1>
+          <span>8 × 8 m</span>
+        </header>
 
+        <nav class="builder-tabs" aria-label="Building section">
+          <button class="builder-tab is-selected" type="button"
+            data-builder-tab="ground" aria-selected="true">
+            Ground
+          </button>
+          <button class="builder-tab" type="button"
+            data-builder-tab="upper" aria-selected="false">
+            Upper floors
+          </button>
+        </nav>
+
+        <div class="builder-tab-panel" data-builder-panel="ground">
         <section class="builder-section" aria-labelledby="bay-label">
-          <span class="section-label" id="bay-label">01 / Select facade bay</span>
+          <span class="section-label" id="bay-label">Ground-floor bay</span>
           <div class="bay-list" role="group" aria-label="Facade bays">
             ${Array.from(
               { length: bayCount },
@@ -126,7 +197,7 @@ function createMarkup(app: HTMLDivElement): void {
         </section>
 
         <section class="builder-section" aria-labelledby="module-label">
-          <span class="section-label" id="module-label">02 / Place module</span>
+          <span class="section-label" id="module-label">Ground-floor module</span>
           <div class="module-list">
             ${modules
               .map(
@@ -143,7 +214,7 @@ function createMarkup(app: HTMLDivElement): void {
         </section>
 
         <section class="builder-section" aria-labelledby="preset-label">
-          <span class="section-label" id="preset-label">Quick layouts</span>
+          <span class="section-label" id="preset-label">Ground presets</span>
           <div class="preset-list">
             <button class="preset-button" type="button" data-preset="residential">
               Residential
@@ -157,11 +228,19 @@ function createMarkup(app: HTMLDivElement): void {
             <button class="preset-button" type="button" data-preset="private">
               Private entry
             </button>
+            <button class="preset-button" type="button" data-preset="brick">
+              Brick facade
+            </button>
+            <button class="preset-button" type="button" data-preset="trim">
+              Trim facade
+            </button>
           </div>
         </section>
+        </div>
 
+        <div class="builder-tab-panel" data-builder-panel="upper" hidden>
         <section class="builder-section" aria-labelledby="upper-label">
-          <span class="section-label" id="upper-label">03 / Upper-floor family</span>
+          <span class="section-label" id="upper-label">Facade material</span>
           <div class="family-list" role="group" aria-label="Facade family">
             ${(["brick", "metal", "trim"] as const)
               .map(
@@ -174,10 +253,14 @@ function createMarkup(app: HTMLDivElement): void {
               )
               .join("")}
           </div>
+          <label class="toggle-control">
+            <span>Facade columns</span>
+            <input type="checkbox" data-columns-enabled checked />
+          </label>
         </section>
 
         <section class="builder-section" aria-labelledby="upper-bay-label">
-          <span class="section-label" id="upper-bay-label">04 / Upper-floor pattern</span>
+          <span class="section-label" id="upper-bay-label">Upper-floor pattern</span>
           <div class="bay-list" role="group" aria-label="Upper-floor bays">
             ${Array.from(
               { length: bayCount },
@@ -189,7 +272,7 @@ function createMarkup(app: HTMLDivElement): void {
               `,
             ).join("")}
           </div>
-          <div class="upper-module-list" style="margin-top:8px">
+          <div class="upper-module-list" style="margin-top:5px">
             <button class="upper-module-button" type="button" data-upper-module="wall">
               Wall
             </button>
@@ -214,7 +297,7 @@ function createMarkup(app: HTMLDivElement): void {
               Solid ends
             </button>
           </div>
-          <div class="family-list" style="margin-top:8px">
+          <div class="family-list" style="margin-top:5px">
             <button class="family-button is-selected" type="button"
               data-stack-mode="repeat" aria-pressed="true">
               Repeat
@@ -227,26 +310,32 @@ function createMarkup(app: HTMLDivElement): void {
         </section>
 
         <section class="builder-section" aria-labelledby="height-label">
-          <span class="section-label" id="height-label">05 / Building height</span>
+          <span class="section-label" id="height-label">Height</span>
           <div class="floor-control">
             <label for="floor-count">Repeated upper floors</label>
             <output id="floor-count-output">2</output>
             <input id="floor-count" type="range" min="1" max="6" value="2" />
           </div>
         </section>
+        </div>
 
         <footer class="builder-footer">
           <div class="status" data-status>
             <span class="status-dot"></span>
             <span data-status-text>Loading modules</span>
           </div>
-          <a class="back-link" href="/">Shader lab ↗</a>
+          <div class="footer-actions">
+            <button class="text-button" type="button" data-inspector>
+              Inspector
+            </button>
+            <a class="back-link" href="/">Back</a>
+          </div>
         </footer>
       </aside>
 
       <section class="viewport" aria-label="3D building preview">
         <canvas id="builderCanvas"></canvas>
-        <p class="viewport-note">Drag to orbit · Wheel to zoom</p>
+        <p class="viewport-note">Orbit: drag · Zoom: wheel</p>
       </section>
     </main>
   `;
@@ -385,10 +474,14 @@ async function bootstrap(): Promise<void> {
       definition.sources.map((source) => source.assetName),
     ),
   );
+  const columnAssetNames = Object.values(columnAssets).flatMap((family) =>
+    Object.values(family),
+  );
   const assetNames = [
     ...new Set([
       ...modules.flatMap((module) => module.assetNames),
       ...upperAssetNames,
+      ...columnAssetNames,
     ]),
   ];
   const loaded = await Promise.all(
@@ -403,7 +496,12 @@ async function bootstrap(): Promise<void> {
   const assets = new Map<string, AssetContainer>(loaded);
   const bayRoots: TransformNode[] = [];
   let selectedBay = 0;
-  let layout: ModuleId[] = ["window", "door", "window", "wall"];
+  let layout: ModuleId[] = [
+    "metalWindow",
+    "doorLeft",
+    "metalWindow",
+    "metalWall",
+  ];
 
   const disposeBay = (index: number): void => {
     // Instances share their source GLTF materials. Dispose only the replaced
@@ -432,9 +530,15 @@ async function bootstrap(): Promise<void> {
         { doNotInstantiate: false },
       );
       for (const rootNode of instance.rootNodes) {
+        const isCenteredTrimDoor =
+          module.id === "trimDoor" && assetIndex === 1;
         setNodeTransform(
           rootNode,
-          new Vector3(0, 0, assetIndex === 0 ? 0 : -0.035),
+          new Vector3(
+            isCenteredTrimDoor ? 0.5 : 0,
+            0,
+            assetIndex === 0 ? 0 : -0.035,
+          ),
         );
         rootNode.parent = bayRoot;
       }
@@ -488,16 +592,52 @@ async function bootstrap(): Promise<void> {
     button.addEventListener("click", () => {
       switch (button.dataset.preset) {
         case "shop":
-          applyLayout(["shopfront", "shopfront", "door", "wall"]);
+          applyLayout([
+            "shopfront",
+            "shopfront",
+            "doorRight",
+            "metalWall",
+          ]);
           break;
         case "showroom":
-          applyLayout(["shopfront", "shopfront", "shopfront", "door"]);
+          applyLayout([
+            "shopfront",
+            "shopfront",
+            "shopfront",
+            "doorRight",
+          ]);
           break;
         case "private":
-          applyLayout(["wall", "window", "door", "wall"]);
+          applyLayout([
+            "metalWall",
+            "metalWindow",
+            "doorLeft",
+            "metalWall",
+          ]);
+          break;
+        case "brick":
+          applyLayout([
+            "brickWindow",
+            "doorLeft",
+            "brickWindow",
+            "brickWall",
+          ]);
+          break;
+        case "trim":
+          applyLayout([
+            "trimWindow",
+            "trimDoor",
+            "trimWindow",
+            "trimWall",
+          ]);
           break;
         default:
-          applyLayout(["window", "door", "window", "wall"]);
+          applyLayout([
+            "metalWindow",
+            "doorLeft",
+            "metalWindow",
+            "metalWall",
+          ]);
       }
     });
   }
@@ -512,6 +652,7 @@ async function bootstrap(): Promise<void> {
   let selectedUpperBay = 0;
   let upperFloorCount = 2;
   let stackMode: "repeat" | "mirror" = "repeat";
+  let columnsEnabled = true;
   let upperRoot: TransformNode | null = null;
 
   const clearUpperOverlap = (index: number): void => {
@@ -586,6 +727,45 @@ async function bootstrap(): Promise<void> {
         }
       }
     }
+
+    if (columnsEnabled) {
+      const familyColumns = columnAssets[upperFamily];
+      const columnLevels = [
+        { assetName: familyColumns.bottom, y: 0 },
+        ...Array.from({ length: upperFloorCount }, (_, floorIndex) => ({
+          assetName:
+            floorIndex === upperFloorCount - 1
+              ? familyColumns.top
+              : familyColumns.center,
+          y: 3 + floorIndex * 3,
+        })),
+      ];
+
+      for (const [levelIndex, level] of columnLevels.entries()) {
+        const container = assets.get(level.assetName);
+        if (!container) {
+          continue;
+        }
+        for (let boundaryIndex = 0; boundaryIndex <= bayCount; boundaryIndex += 1) {
+          const instance = container.instantiateModelsToScene(
+            (name) => `column-${levelIndex}-${boundaryIndex}-${name}`,
+            false,
+            { doNotInstantiate: false },
+          );
+          for (const rootNode of instance.rootNodes) {
+            setNodeTransform(
+              rootNode,
+              new Vector3(
+                (boundaryIndex - bayCount / 2) * bayWidth,
+                level.y,
+                -0.025,
+              ),
+            );
+            rootNode.parent = upperRoot;
+          }
+        }
+      }
+    }
     updateShellHeight();
   };
 
@@ -635,6 +815,14 @@ async function bootstrap(): Promise<void> {
       updateUpperControls();
     });
   }
+
+  const columnsInput = document.querySelector<HTMLInputElement>(
+    "[data-columns-enabled]",
+  );
+  columnsInput?.addEventListener("change", () => {
+    columnsEnabled = columnsInput.checked;
+    buildUpperFloors();
+  });
 
   for (const button of document.querySelectorAll<HTMLButtonElement>(
     "[data-upper-module]",
@@ -715,6 +903,52 @@ async function bootstrap(): Promise<void> {
   if (statusText) {
     statusText.textContent = `${assetNames.length} sources ready`;
   }
+
+  for (const tab of document.querySelectorAll<HTMLButtonElement>(
+    "[data-builder-tab]",
+  )) {
+    tab.addEventListener("click", () => {
+      const selectedPanel = tab.dataset.builderTab;
+      for (const candidate of document.querySelectorAll<HTMLButtonElement>(
+        "[data-builder-tab]",
+      )) {
+        const isSelected = candidate.dataset.builderTab === selectedPanel;
+        candidate.classList.toggle("is-selected", isSelected);
+        candidate.setAttribute("aria-selected", String(isSelected));
+      }
+      for (const panel of document.querySelectorAll<HTMLElement>(
+        "[data-builder-panel]",
+      )) {
+        panel.hidden = panel.dataset.builderPanel !== selectedPanel;
+      }
+    });
+  }
+
+  const inspectorButton =
+    document.querySelector<HTMLButtonElement>("[data-inspector]");
+  inspectorButton?.addEventListener("click", async () => {
+    inspectorButton.disabled = true;
+    try {
+      if (scene.debugLayer.isVisible()) {
+        await scene.debugLayer.hide();
+        inspectorButton.textContent = "Inspector";
+        return;
+      }
+
+      inspectorButton.textContent = "Loading…";
+      await Promise.all([
+        import("@babylonjs/core/Debug/debugLayer"),
+        import("@babylonjs/inspector"),
+      ]);
+      await scene.debugLayer.show({ embedMode: true });
+      inspectorButton.textContent = "Close inspector";
+    } catch (error) {
+      console.error("Unable to load Babylon Inspector.", error);
+      inspectorButton.textContent = "Inspector failed";
+    } finally {
+      inspectorButton.disabled = false;
+    }
+  });
 
   engine.runRenderLoop(() => scene.render());
   const resize = () => engine.resize();

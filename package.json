@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@babylonjs/core": "9.18.0",
-    "@babylonjs/gui": "9.18.0",
+    "@babylonjs/inspector": "9.18.0",
     "@babylonjs/loaders": "9.18.0"
   },
   "devDependencies": {

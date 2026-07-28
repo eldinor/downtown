@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-28T00:13:35.802Z",
+  "generatedAt": "2026-07-28T10:11:44.208Z",
   "sourceRoot": "source-assets/megakit",
   "models": [
     {
@@ -488,6 +488,231 @@
         "T_RedBrick_Normal.png",
         "T_RedBrick_BaseColor.png",
         "T_RedBrick_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Brick_BottomTrim",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Brick_BottomTrim.gltf",
+      "runtime": "/assets/megakit/models/Brick_BottomTrim.gltf",
+      "materials": [
+        "MI_RedBrick",
+        "MI_Trim",
+        "MI_InteriorWall"
+      ],
+      "images": [
+        "T_RedBrick_Normal.png",
+        "T_RedBrick_BaseColor.png",
+        "T_RedBrick_ORM.png",
+        "T_Trim_Normal.png",
+        "T_Trim_BaseColor.png",
+        "T_Trim_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Trim_FirstFloor_Wall",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Trim_FirstFloor_Wall.gltf",
+      "runtime": "/assets/megakit/models/Trim_FirstFloor_Wall.gltf",
+      "materials": [
+        "MI_Trim",
+        "MI_InteriorWall"
+      ],
+      "images": [
+        "T_Trim_Normal.png",
+        "T_Trim_BaseColor.png",
+        "T_Trim_ORM.png",
+        "T_RedBrick_Normal.png",
+        "T_RedBrick_BaseColor.png",
+        "T_RedBrick_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Trim_FirstFloor_Window_001",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Trim_FirstFloor_Window_001.gltf",
+      "runtime": "/assets/megakit/models/Trim_FirstFloor_Window_001.gltf",
+      "materials": [
+        "MI_Trim_Green",
+        "MI_FakeInterior",
+        "MI_InteriorWall",
+        "MI_Glass"
+      ],
+      "images": [
+        "T_Trim_Normal.png",
+        "T_Trim_BaseColor.png",
+        "T_Trim_ORM.png",
+        "T_RedBrick_Normal.png",
+        "T_RedBrick_BaseColor.png",
+        "T_RedBrick_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "DoorFrame_Trim",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/DoorFrame_Trim.gltf",
+      "runtime": "/assets/megakit/models/DoorFrame_Trim.gltf",
+      "materials": [
+        "MI_Trim_Green",
+        "MI_Glass",
+        "MI_Trim",
+        "MI_InteriorWall"
+      ],
+      "images": [
+        "T_Trim_Normal.png",
+        "T_Trim_BaseColor.png",
+        "T_Trim_ORM.png",
+        "T_RedBrick_Normal.png",
+        "T_RedBrick_BaseColor.png",
+        "T_RedBrick_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Door_1",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Door_1.gltf",
+      "runtime": "/assets/megakit/models/Door_1.gltf",
+      "materials": [
+        "MI_Trim_MetalConcrete"
+      ],
+      "images": [
+        "T_MetalConcrete_Normal.png",
+        "T_MetalConcrete_BaseColor.png",
+        "T_MetalConcrete_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Brick_HalfColumn_Bottom",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Brick_HalfColumn_Bottom.gltf",
+      "runtime": "/assets/megakit/models/Brick_HalfColumn_Bottom.gltf",
+      "materials": [
+        "MI_RedBrick",
+        "MI_Trim"
+      ],
+      "images": [
+        "T_RedBrick_Normal.png",
+        "T_RedBrick_BaseColor.png",
+        "T_RedBrick_ORM.png",
+        "T_Trim_Normal.png",
+        "T_Trim_BaseColor.png",
+        "T_Trim_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Brick_HalfColumn_Center",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Brick_HalfColumn_Center.gltf",
+      "runtime": "/assets/megakit/models/Brick_HalfColumn_Center.gltf",
+      "materials": [
+        "MI_RedBrick"
+      ],
+      "images": [
+        "T_RedBrick_Normal.png",
+        "T_RedBrick_BaseColor.png",
+        "T_RedBrick_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Brick_HalfColumn_Top",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Brick_HalfColumn_Top.gltf",
+      "runtime": "/assets/megakit/models/Brick_HalfColumn_Top.gltf",
+      "materials": [
+        "MI_RedBrick",
+        "MI_Trim"
+      ],
+      "images": [
+        "T_RedBrick_Normal.png",
+        "T_RedBrick_BaseColor.png",
+        "T_RedBrick_ORM.png",
+        "T_Trim_Normal.png",
+        "T_Trim_BaseColor.png",
+        "T_Trim_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Metal_Column_Small_Bottom",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Metal_Column_Small_Bottom.gltf",
+      "runtime": "/assets/megakit/models/Metal_Column_Small_Bottom.gltf",
+      "materials": [
+        "MI_Trim_MetalConcrete"
+      ],
+      "images": [
+        "T_MetalConcrete_Normal.png",
+        "T_MetalConcrete_BaseColor.png",
+        "T_MetalConcrete_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Metal_Column_Small_Center",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Metal_Column_Small_Center.gltf",
+      "runtime": "/assets/megakit/models/Metal_Column_Small_Center.gltf",
+      "materials": [
+        "MI_Trim_MetalConcrete"
+      ],
+      "images": [
+        "T_MetalConcrete_Normal.png",
+        "T_MetalConcrete_BaseColor.png",
+        "T_MetalConcrete_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Metal_Column_Small_Top",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Metal_Column_Small_Top.gltf",
+      "runtime": "/assets/megakit/models/Metal_Column_Small_Top.gltf",
+      "materials": [
+        "MI_Trim_MetalConcrete"
+      ],
+      "images": [
+        "T_MetalConcrete_Normal.png",
+        "T_MetalConcrete_BaseColor.png",
+        "T_MetalConcrete_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Trim_Column_Bottom",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Trim_Column_Bottom.gltf",
+      "runtime": "/assets/megakit/models/Trim_Column_Bottom.gltf",
+      "materials": [
+        "MI_Trim"
+      ],
+      "images": [
+        "T_Trim_Normal.png",
+        "T_Trim_BaseColor.png",
+        "T_Trim_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Trim_Column_Center",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Trim_Column_Center.gltf",
+      "runtime": "/assets/megakit/models/Trim_Column_Center.gltf",
+      "materials": [
+        "MI_Trim"
+      ],
+      "images": [
+        "T_Trim_Normal.png",
+        "T_Trim_BaseColor.png",
+        "T_Trim_ORM.png"
+      ],
+      "remaps": []
+    },
+    {
+      "name": "Trim_Column_Top",
+      "source": "source-assets/megakit/Exports/glTF (Godot)/Trim_Column_Top.gltf",
+      "runtime": "/assets/megakit/models/Trim_Column_Top.gltf",
+      "materials": [
+        "MI_Trim"
+      ],
+      "images": [
+        "T_Trim_Normal.png",
+        "T_Trim_BaseColor.png",
+        "T_Trim_ORM.png"
       ],
       "remaps": []
     }
