@@ -8,7 +8,13 @@ import type { WeatherController } from "../core/WeatherController";
 export interface HudBindings {
   setCameraMode(mode: "orbit" | "walk"): void;
   setSsrEnabled(enabled: boolean): void;
-  setInteriorPreviewVariant(variant: InteriorVariantId): void;
+  setEnvironmentEnabled(enabled: boolean): void;
+  setWindowReflectionsEnabled(enabled: boolean): void;
+  setWindowReflectionIntensity(value: number): void;
+  setLightIntensity(value: number): void;
+  setInteriorDistribution(
+    mode: "mixed" | "swap" | "city" | InteriorVariantId,
+  ): void;
   getInteriorState(variant: InteriorVariantId): InteriorControlState;
   updateInterior(
     variant: InteriorVariantId,
@@ -70,6 +76,11 @@ export function createHud(
         <input id="wearRange" type="range" min="0" max="100" value="55" />
       </label>
 
+      <label class="range-control">
+        <span><b>Light intensity</b><output id="lightIntensityValue">2.10</output></span>
+        <input id="lightIntensityRange" type="range" min="0" max="4" step="0.05" value="2.1" />
+      </label>
+
       <div class="field">
         <span class="field-label">Diagnostic view</span>
         <div class="segmented" id="debugModes">
@@ -109,10 +120,34 @@ export function createHud(
         <span class="live-badge">Live</span>
       </div>
       <p class="panel-description">Tune the selected window material. Changes apply immediately and remain independent per variant.</p>
+      <label class="checkbox-control">
+        <input id="environmentTextureEnabled" type="checkbox" checked />
+        <span>Use environment texture</span>
+      </label>
+      <label class="checkbox-control">
+        <input id="windowReflectionsEnabled" type="checkbox" />
+        <span>Reflect windows on asphalt</span>
+      </label>
+      <label class="range-control compact">
+        <span><b>Reflection intensity</b><output id="windowReflectionIntensityValue">2.50&times;</output></span>
+        <input id="windowReflectionIntensity" type="range" min="0" max="5" step="0.05" value="2.5" />
+      </label>
+
+      <label class="select-control distribution-control">
+        <span>Window distribution</span>
+        <select id="interiorDistribution">
+          <option value="mixed">Mixed (authored)</option>
+          <option value="swap">Swap groups</option>
+          <option value="city">Real city</option>
+          <option value="lit1">All lit interior 1</option>
+          <option value="lit2">All lit interior 2</option>
+          <option value="dark">All dark</option>
+        </select>
+      </label>
 
       <div class="select-grid">
         <label class="select-control">
-          <span>Material variant</span>
+          <span>Edit variant</span>
           <select id="interiorVariant">
             <option value="lit1">Lit interior 1</option>
             <option value="lit2">Lit interior 2</option>
@@ -206,6 +241,41 @@ export function createHud(
     document.querySelector<HTMLOutputElement>("#wetnessValue")!;
   const wearRange = document.querySelector<HTMLInputElement>("#wearRange")!;
   const wearValue = document.querySelector<HTMLOutputElement>("#wearValue")!;
+  const lightIntensityRange = document.querySelector<HTMLInputElement>(
+    "#lightIntensityRange",
+  )!;
+  const lightIntensityValue = document.querySelector<HTMLOutputElement>(
+    "#lightIntensityValue",
+  )!;
+  const environmentTextureEnabled = document.querySelector<HTMLInputElement>(
+    "#environmentTextureEnabled",
+  )!;
+  const windowReflectionsEnabled = document.querySelector<HTMLInputElement>(
+    "#windowReflectionsEnabled",
+  )!;
+  const windowReflectionIntensity =
+    document.querySelector<HTMLInputElement>("#windowReflectionIntensity")!;
+  const windowReflectionIntensityValue =
+    document.querySelector<HTMLOutputElement>(
+      "#windowReflectionIntensityValue",
+    )!;
+
+  environmentTextureEnabled.addEventListener("change", () => {
+    bindings.setEnvironmentEnabled(environmentTextureEnabled.checked);
+  });
+  windowReflectionsEnabled.addEventListener("change", () => {
+    bindings.setWindowReflectionsEnabled(windowReflectionsEnabled.checked);
+  });
+  windowReflectionIntensity.addEventListener("input", () => {
+    const value = Number(windowReflectionIntensity.value);
+    windowReflectionIntensityValue.value = `${value.toFixed(2)}×`;
+    bindings.setWindowReflectionIntensity(value);
+  });
+  lightIntensityRange.addEventListener("input", () => {
+    const value = Number(lightIntensityRange.value);
+    lightIntensityValue.value = value.toFixed(2);
+    bindings.setLightIntensity(value);
+  });
 
   wetnessRange.addEventListener("input", () => {
     const value = Number(wetnessRange.value);
@@ -275,6 +345,9 @@ export function createHud(
   let activeInterior: InteriorVariantId = "lit1";
   const interiorVariant =
     document.querySelector<HTMLSelectElement>("#interiorVariant")!;
+  const interiorDistribution = document.querySelector<HTMLSelectElement>(
+    "#interiorDistribution",
+  )!;
   const interiorTexture =
     document.querySelector<HTMLSelectElement>("#interiorTexture")!;
   const rangeFormatters: Record<
@@ -326,8 +399,16 @@ export function createHud(
 
   interiorVariant.addEventListener("change", () => {
     activeInterior = interiorVariant.value as InteriorVariantId;
-    bindings.setInteriorPreviewVariant(activeInterior);
     syncInteriorPanel();
+  });
+  interiorDistribution.addEventListener("change", () => {
+    bindings.setInteriorDistribution(
+      interiorDistribution.value as
+        | "mixed"
+        | "swap"
+        | "city"
+        | InteriorVariantId,
+    );
   });
 
   interiorTexture.addEventListener("change", () => {

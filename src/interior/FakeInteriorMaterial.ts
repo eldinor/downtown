@@ -46,7 +46,13 @@ uniform float roomHeight;
 uniform float cubeRotation;
 uniform float cubeFlipY;
 uniform float emissiveIntensity;
+uniform float cityRandomEnabled;
+uniform float cityRandomTime;
 uniform samplerCube interiorCube;
+
+float roomHash(vec3 cell) {
+  return fract(sin(dot(cell, vec3(12.9898, 78.233, 37.719))) * 43758.5453);
+}
 
 vec3 nonZeroRay(vec3 ray) {
   return vec3(
@@ -117,6 +123,36 @@ void main(void) {
   vec3 color = interiorLinear * emissiveIntensity;
   color *= mix(0.55, 1.0, frameAO);
   color *= mix(0.78, 1.0, depthFade);
+  vec3 roomCell = floor(vPositionW / vec3(2.0, 3.0, 2.0));
+  float roomPeriod = mix(
+    4.5,
+    13.0,
+    roomHash(roomCell + vec3(19.7, 3.1, 8.3))
+  );
+  float roomOffset =
+    roomHash(roomCell + vec3(5.2, 17.4, 2.6)) * roomPeriod;
+  float roomClock = (cityRandomTime + roomOffset) / roomPeriod;
+  float roomStep = floor(roomClock);
+  float roomProgress = fract(roomClock);
+  float previousLit = step(
+    0.42,
+    roomHash(roomCell + vec3((roomStep - 1.0) * 7.0, (roomStep - 1.0) * 3.0, (roomStep - 1.0) * 11.0))
+  );
+  float nextLit = step(
+    0.42,
+    roomHash(roomCell + vec3(roomStep * 7.0, roomStep * 3.0, roomStep * 11.0))
+  );
+  float transitionLength = mix(
+    0.035,
+    0.11,
+    roomHash(roomCell + vec3(11.8, 4.6, 23.9))
+  );
+  float roomLit = mix(
+    previousLit,
+    nextLit,
+    smoothstep(0.0, transitionLength, roomProgress)
+  );
+  color *= mix(1.0, mix(0.035, 1.0, roomLit), cityRandomEnabled);
 
   gl_FragColor = vec4(color, 1.0);
 }
@@ -160,6 +196,8 @@ export class FakeInteriorMaterial {
           "cubeRotation",
           "cubeFlipY",
           "emissiveIntensity",
+          "cityRandomEnabled",
+          "cityRandomTime",
         ],
         samplers: ["interiorCube"],
       },
@@ -179,6 +217,8 @@ export class FakeInteriorMaterial {
       "emissiveIntensity",
       options.emissiveIntensity ?? 1,
     );
+    this.material.setFloat("cityRandomEnabled", 0);
+    this.material.setFloat("cityRandomTime", 0);
     this.material.backFaceCulling = false;
 
     this.material.onBindObservable.add(() => {
@@ -190,6 +230,11 @@ export class FakeInteriorMaterial {
 
   setIntensity(value: number): void {
     this.material.setFloat("emissiveIntensity", value);
+  }
+
+  setCityRandom(enabled: boolean, time: number): void {
+    this.material.setFloat("cityRandomEnabled", enabled ? 1 : 0);
+    this.material.setFloat("cityRandomTime", time);
   }
 
   setRoomTexture(url: string): void {

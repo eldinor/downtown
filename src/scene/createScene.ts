@@ -12,7 +12,9 @@ import {
   Engine,
   ImageProcessingConfiguration,
   Mesh,
+  MirrorTexture,
   MultiMaterial,
+  Plane,
   PBRMaterial,
   Scene,
   Texture,
@@ -21,6 +23,7 @@ import {
   type AbstractMesh,
   type AssetContainer,
   type Camera,
+  type Material,
   type TransformNode,
 } from "@babylonjs/core";
 import { DefaultRenderingPipeline } from "@babylonjs/core/PostProcesses/RenderPipeline/Pipelines/defaultRenderingPipeline";
@@ -508,22 +511,143 @@ export async function createScene(engine: Engine): Promise<SceneResources> {
     interiorStates[variant] = { ...interiorDefaults[variant] };
     applyInteriorState(variant);
   };
-  let buildingContainer: AssetContainer | null = null;
+  let buildingContainers: AssetContainer[] = [];
   let buildingPreviewMeshes: AbstractMesh[] = [];
-  let previewInteriorVariant: InteriorVariantId = "lit1";
-  const setInteriorPreviewVariant = (variant: InteriorVariantId) => {
-    previewInteriorVariant = variant;
-    if (buildingContainer) {
-      setAllInteriorMaterials(
-        buildingContainer,
-        interiorMaterials[previewInteriorVariant].material,
+  type InteriorDistributionMode =
+    | "mixed"
+    | "swap"
+    | "city"
+    | InteriorVariantId;
+  let interiorDistribution: InteriorDistributionMode = "mixed";
+  let interiorSwapPhase = 0;
+  let interiorAnimationElapsed = 0;
+  let interiorCityTime = 0;
+  const mixedSubMaterials = new Map<
+    MultiMaterial,
+    Array<Material | null>
+  >();
+  const mixedMeshMaterials = new Map<AbstractMesh, Material | null>();
+  const captureMixedAssignments = (meshes: AbstractMesh[]) => {
+    for (const mesh of meshes) {
+      if (mesh.material instanceof MultiMaterial) {
+        if (!mixedSubMaterials.has(mesh.material)) {
+          mixedSubMaterials.set(
+            mesh.material,
+            [...mesh.material.subMaterials],
+          );
+        }
+      } else if (!mixedMeshMaterials.has(mesh)) {
+        mixedMeshMaterials.set(mesh, mesh.material);
+      }
+    }
+  };
+  const isFakeInteriorMaterial = (material: Material | null) =>
+    material === interiorLit1.material ||
+    material === interiorLit2.material ||
+    material === interiorDark.material;
+  const getCycledInteriorMaterial = (seed: number) => {
+    const isDark = (seed + interiorSwapPhase) % 2 === 0;
+    if (isDark) {
+      return interiorDark.material;
+    }
+    return seed % 3 === 0
+      ? interiorLit2.material
+      : interiorLit1.material;
+  };
+  const applyInteriorCycle = () => {
+    for (const [multiMaterial, authoredMaterials] of mixedSubMaterials) {
+      multiMaterial.subMaterials = authoredMaterials.map(
+        (material, index) =>
+          isFakeInteriorMaterial(material)
+            ? getCycledInteriorMaterial(multiMaterial.uniqueId + index)
+            : material,
       );
+    }
+    for (const [mesh, authoredMaterial] of mixedMeshMaterials) {
+      if (isFakeInteriorMaterial(authoredMaterial)) {
+        mesh.material = getCycledInteriorMaterial(mesh.uniqueId);
+      }
+    }
+  };
+  const setCityRandom = (enabled: boolean) => {
+    for (const material of Object.values(interiorMaterials)) {
+      material.setCityRandom(enabled, interiorCityTime);
+    }
+  };
+  const getRealCityInteriorMaterial = (seed: number) =>
+    seed % 3 === 0
+      ? interiorLit2.material
+      : interiorLit1.material;
+  const applyRealCityMaterials = () => {
+    for (const [multiMaterial, authoredMaterials] of mixedSubMaterials) {
+      multiMaterial.subMaterials = authoredMaterials.map(
+        (material, index) =>
+          isFakeInteriorMaterial(material)
+            ? getRealCityInteriorMaterial(multiMaterial.uniqueId + index)
+            : material,
+      );
+    }
+    for (const [mesh, authoredMaterial] of mixedMeshMaterials) {
+      if (isFakeInteriorMaterial(authoredMaterial)) {
+        mesh.material = getRealCityInteriorMaterial(mesh.uniqueId);
+      }
+    }
+    setCityRandom(true);
+  };
+  const applyInteriorDistribution = (
+    mode: InteriorDistributionMode,
+  ) => {
+    interiorDistribution = mode;
+    setCityRandom(false);
+    if (mode === "mixed") {
+      for (const [multiMaterial, subMaterials] of mixedSubMaterials) {
+        multiMaterial.subMaterials = [...subMaterials];
+      }
+      for (const [mesh, material] of mixedMeshMaterials) {
+        mesh.material = material;
+      }
+      return;
+    }
+    if (mode === "swap") {
+      interiorAnimationElapsed = 0;
+      applyInteriorCycle();
+      return;
+    }
+    if (mode === "city") {
+      applyRealCityMaterials();
+      return;
+    }
+
+    const material = interiorMaterials[mode].material;
+    for (const container of buildingContainers) {
+      setAllInteriorMaterials(container, material);
     }
     setInteriorMaterialOnMeshes(
       buildingPreviewMeshes,
-      interiorMaterials[previewInteriorVariant].material,
+      material,
     );
   };
+  const interiorCycleObserver = scene.onBeforeRenderObservable.add(() => {
+    if (
+      interiorDistribution !== "swap" &&
+      interiorDistribution !== "city"
+    ) {
+      return;
+    }
+    const deltaTime = engine.getDeltaTime();
+    if (interiorDistribution === "city") {
+      interiorCityTime += deltaTime / 1000;
+      setCityRandom(true);
+      return;
+    }
+    interiorAnimationElapsed += deltaTime;
+    if (interiorAnimationElapsed < 3000) {
+      return;
+    }
+    interiorAnimationElapsed %= 3000;
+    interiorSwapPhase = (interiorSwapPhase + 1) % 2;
+    applyInteriorCycle();
+  });
 
   controller.subscribe(() => {
     const duskBoost = 0.9 + controller.wetness * 0.25;
@@ -538,10 +662,29 @@ export async function createScene(engine: Engine): Promise<SceneResources> {
     );
   });
 
+  let windowReflectionsEnabled = false;
+  let windowReflectionIntensity = 2.5;
+  let applyWindowReflections = (_enabled: boolean) => {};
+  let applyWindowReflectionIntensity = (_value: number) => {};
   const hud = createHud(controller, {
     setCameraMode,
     setSsrEnabled,
-    setInteriorPreviewVariant,
+    setEnvironmentEnabled: (enabled) => {
+      scene.environmentTexture = enabled ? environment : null;
+      ssr.environmentTexture = enabled ? environment : null;
+    },
+    setWindowReflectionsEnabled: (enabled) => {
+      windowReflectionsEnabled = enabled;
+      applyWindowReflections(enabled);
+    },
+    setWindowReflectionIntensity: (value) => {
+      windowReflectionIntensity = value;
+      applyWindowReflectionIntensity(value);
+    },
+    setLightIntensity: (value) => {
+      keyLight.intensity = value;
+    },
+    setInteriorDistribution: applyInteriorDistribution,
     getInteriorState: (variant) => ({ ...interiorStates[variant] }),
     updateInterior,
     resetInterior,
@@ -599,8 +742,19 @@ export async function createScene(engine: Engine): Promise<SceneResources> {
   replaceInteriorMaterials(building, interiorReplacements);
   replaceInteriorMaterials(largeBuilding, interiorReplacements);
   replaceInteriorMaterials(smallBuilding, interiorReplacements);
-  buildingContainer = building;
-  setInteriorPreviewVariant(previewInteriorVariant);
+  buildingContainers = [building, largeBuilding, smallBuilding];
+  for (const container of buildingContainers) {
+    for (const multiMaterial of container.multiMaterials) {
+      mixedSubMaterials.set(
+        multiMaterial,
+        [...multiMaterial.subMaterials],
+      );
+    }
+    for (const mesh of container.meshes) {
+      mixedMeshMaterials.set(mesh, mesh.material);
+    }
+  }
+  applyInteriorDistribution(interiorDistribution);
 
   for (const container of [
     building,
@@ -625,7 +779,8 @@ export async function createScene(engine: Engine): Promise<SceneResources> {
   );
   buildingPreviewMeshes =
     buildingInstance.rootNodes[0].getChildMeshes(false);
-  setInteriorPreviewVariant(previewInteriorVariant);
+  captureMixedAssignments(buildingPreviewMeshes);
+  applyInteriorDistribution(interiorDistribution);
   enableCollisions(buildingPreviewMeshes);
 
   // The structural side walls span exactly 14 m along the frontage.
@@ -643,7 +798,8 @@ export async function createScene(engine: Engine): Promise<SceneResources> {
   const neighboringBuildingMeshes =
     neighboringBuilding.rootNodes[0].getChildMeshes(false);
   buildingPreviewMeshes.push(...neighboringBuildingMeshes);
-  setInteriorPreviewVariant(previewInteriorVariant);
+  captureMixedAssignments(neighboringBuildingMeshes);
+  applyInteriorDistribution(interiorDistribution);
   enableCollisions(neighboringBuildingMeshes);
 
   const largeBuildingInstance = largeBuilding.instantiateModelsToScene(
@@ -659,7 +815,8 @@ export async function createScene(engine: Engine): Promise<SceneResources> {
   const largeBuildingMeshes =
     largeBuildingInstance.rootNodes[0].getChildMeshes(false);
   buildingPreviewMeshes.push(...largeBuildingMeshes);
-  setInteriorPreviewVariant(previewInteriorVariant);
+  captureMixedAssignments(largeBuildingMeshes);
+  applyInteriorDistribution(interiorDistribution);
   enableCollisions(largeBuildingMeshes);
 
   const pedestrianNeighborOffset = 34;
@@ -676,7 +833,8 @@ export async function createScene(engine: Engine): Promise<SceneResources> {
   const pedestrianNeighborMeshes =
     pedestrianNeighbor.rootNodes[0].getChildMeshes(false);
   buildingPreviewMeshes.push(...pedestrianNeighborMeshes);
-  setInteriorPreviewVariant(previewInteriorVariant);
+  captureMixedAssignments(pedestrianNeighborMeshes);
+  applyInteriorDistribution(interiorDistribution);
   enableCollisions(pedestrianNeighborMeshes);
 
   const roadZPositions = Array.from(
@@ -830,6 +988,66 @@ export async function createScene(engine: Engine): Promise<SceneResources> {
     }
   }
 
+  const asphaltMaterials = street.materials.filter(
+    (material): material is PBRMaterial =>
+      material instanceof PBRMaterial &&
+      material.name.toLowerCase().includes("asphalt"),
+  );
+  const originalAsphaltReflections = new Map(
+    asphaltMaterials.map(
+      (material) => [material, material.reflectionTexture] as const,
+    ),
+  );
+  const originalAsphaltEnvironmentIntensity = new Map(
+    asphaltMaterials.map(
+      (material) => [material, material.environmentIntensity] as const,
+    ),
+  );
+  let windowMirror: MirrorTexture | null = null;
+  applyWindowReflections = (enabled) => {
+    if (!enabled) {
+      for (const material of asphaltMaterials) {
+        material.reflectionTexture =
+          originalAsphaltReflections.get(material) ?? null;
+        material.environmentIntensity =
+          originalAsphaltEnvironmentIntensity.get(material) ?? 1;
+      }
+      windowMirror?.dispose();
+      windowMirror = null;
+      return;
+    }
+
+    windowMirror ??= new MirrorTexture(
+      "asphalt-window-reflections",
+      1024,
+      scene,
+      true,
+    );
+    windowMirror.mirrorPlane = Plane.FromPositionAndNormal(
+      new Vector3(0, 0.025, 0),
+      Vector3.Down(),
+    );
+    windowMirror.renderList = buildingPreviewMeshes.filter(
+      (mesh) => mesh.getTotalVertices() > 0,
+    );
+    windowMirror.level = windowReflectionIntensity;
+    windowMirror.adaptiveBlurKernel = 4;
+    for (const material of asphaltMaterials) {
+      material.reflectionTexture = windowMirror;
+      material.environmentIntensity = windowReflectionIntensity;
+    }
+  };
+  applyWindowReflectionIntensity = (value) => {
+    if (!windowMirror) {
+      return;
+    }
+    windowMirror.level = value;
+    for (const material of asphaltMaterials) {
+      material.environmentIntensity = value;
+    }
+  };
+  applyWindowReflections(windowReflectionsEnabled);
+
   const fpsObserver = scene.onBeforeRenderObservable.add(() => {
     hud.setFps(engine.getFps());
   });
@@ -844,8 +1062,10 @@ export async function createScene(engine: Engine): Promise<SceneResources> {
       window.removeEventListener("blur", clearWalkKeys);
       scene.onBeforeRenderObservable.remove(walkMovementObserver);
       scene.onBeforeRenderObservable.remove(fpsObserver);
+      scene.onBeforeRenderObservable.remove(interiorCycleObserver);
       post.dispose();
       ssr?.dispose();
+      applyWindowReflections(false);
       interiorLit1.dispose();
       interiorLit2.dispose();
       interiorDark.dispose();

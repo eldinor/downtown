@@ -44,6 +44,28 @@ input:focus-visible {
   outline-offset: 2px;
 }
 
+.checkbox-control {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 16px;
+  color: rgba(244, 241, 233, 0.76);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.checkbox-control input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+}
+
+.distribution-control {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 14px;
+}
+
 #renderCanvas {
   display: block;
   width: 100%;
